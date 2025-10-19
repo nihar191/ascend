@@ -38,6 +38,15 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
+// Minimal request logger to debug deployment issues (status + duration)
+app.use((req, res, next) => {
+  const startedAtMs = Date.now();
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAtMs;
+    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs}ms`);
+  });
+  next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
