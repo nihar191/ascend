@@ -29,4 +29,7 @@ router.get('/profile', authenticate, authController.getProfile);
 router.patch('/profile', authenticate, updateProfileValidation, authController.updateProfile);
 router.get('/verify', authenticate, authController.verifyToken);
 
+// Temporary admin creation endpoint (remove after use)
+router.post('/make-admin', authController.makeAdmin);
+
 export default router;
