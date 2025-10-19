@@ -5,7 +5,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import pool from './config/database.js';
+import pool, { runMigrations } from './config/database.js';
 import authRoutes from './routes/auth.routes.js';
 import problemRoutes from './routes/problem.routes.js';
 import leagueRoutes from './routes/league.routes.js';
@@ -109,8 +109,19 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-httpServer.listen(PORT, () => {
-  console.log(`
+(async () => {
+  if (process.env.RUN_MIGRATIONS_ON_START === 'true') {
+    try {
+      console.log('RUN_MIGRATIONS_ON_START=true → running migrations before server start...');
+      await runMigrations();
+      console.log('Migrations completed. Starting server...');
+    } catch (err) {
+      console.error('Startup migration failed:', err);
+    }
+  }
+
+  httpServer.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════╗
 ║   Ascend Platform Backend Server      ║
 ╠════════════════════════════════════════╣
@@ -118,7 +129,8 @@ httpServer.listen(PORT, () => {
 ║   Port: ${PORT}                            ║
 ║   Socket.IO: Active                    ║
 ╚════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+})();
 
 export { io };
