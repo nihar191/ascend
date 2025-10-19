@@ -47,6 +47,13 @@ export const leaguesAPI = {
   getLeaderboard: (seasonId, params) => api.get(`/leagues/seasons/${seasonId}/leaderboard`, { params }),
   getGlobalLeaderboard: (params) => api.get('/leagues/global-leaderboard', { params }),
   joinSeason: (seasonId) => api.post(`/leagues/seasons/${seasonId}/join`),
+  // Admin only
+  createLeague: (data) => api.post('/leagues', data),
+  createSeason: (data) => api.post('/leagues/seasons', data),
+};
+
+export const adminAPI = {
+  getDashboardStats: () => api.get('/admin/dashboard/stats'),
 };
 
 export const matchesAPI = {

@@ -17,6 +17,8 @@ import ProblemsPage from './pages/ProblemsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import MatchPage from './pages/MatchPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminLeaguesPage from './pages/admin/AdminLeaguesPage';
 
 function App() {
   return (
@@ -36,6 +38,12 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/match/:id" element={<MatchPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+
+          {/* Admin routes */}
+          <Route element={<AdminRoute><Layout /></AdminRoute>}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/leagues" element={<AdminLeaguesPage />} />
           </Route>
 
           {/* Catch all */}
