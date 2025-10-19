@@ -9,7 +9,7 @@
         "dev": "nodemon server.js",
         "migrate": "node -e \"import('./config/database.js').then(db => db.runMigrations())\"",
         "seed": "psql -U postgres -d ascend_db -f seeds/seed.sql",
-        "seed:ai": "node scripts/seedAIProblems.js",
+        "seed:ai": "node scripts/SeedAIProblems.js",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     },
     "dependencies": {
