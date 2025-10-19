@@ -199,9 +199,15 @@ class MatchmakingService {
         
         console.log(`✓ Match ${match.id} created (${matchType}) with ${players.length} players`);
       } catch (error) {
-        console.error('Failed to create match:', error);
+        console.error('Failed to create match:', error.message);
         // Return players to queue
         players.forEach(p => queue.push(p));
+        
+        // If it's a league/season issue, stop processing to prevent spam
+        if (error.message.includes('No league found') || error.message.includes('No active season')) {
+          console.log('⚠️  Stopping matchmaking due to missing leagues/seasons. Please create them first.');
+          break;
+        }
       }
     }
 
@@ -240,6 +246,11 @@ class MatchmakingService {
     // Get appropriate season based on average rating
     const avgRating = players.reduce((sum, p) => sum + p.rating, 0) / players.length;
     const league = await League.getLeagueForRating(avgRating);
+    
+    if (!league) {
+      throw new Error('No league found for rating range. Please create leagues first.');
+    }
+    
     const season = await Season.getActiveSeason(league.id);
 
     if (!season) {

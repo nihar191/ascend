@@ -252,7 +252,7 @@ export const createLeague = async (req, res) => {
  */
 export const createSeason = async (req, res) => {
   try {
-    const { leagueId, seasonNumber, startDate, endDate, isActive } = req.body;
+    const { leagueId, seasonNumber, startDate, endDate, isActive = true } = req.body;
 
     const league = await League.findById(leagueId);
     if (!league) {

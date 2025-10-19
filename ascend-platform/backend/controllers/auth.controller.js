@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import authConfig from '../config/auth.js';
+import pool from '../config/database.js';
 
 /**
  * Generate JWT token for authenticated user
