@@ -38,6 +38,9 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
 }));
+
+// Trust proxy for Render's load balancer (fixes rate limiting)
+app.set('trust proxy', 1);
 // Minimal request logger to debug deployment issues (status + duration)
 app.use((req, res, next) => {
   const startedAtMs = Date.now();
@@ -119,6 +122,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 (async () => {
+  console.log('RUN_MIGRATIONS_ON_START env var:', process.env.RUN_MIGRATIONS_ON_START);
   if (process.env.RUN_MIGRATIONS_ON_START === 'true') {
     try {
       console.log('RUN_MIGRATIONS_ON_START=true → running migrations before server start...');
@@ -127,6 +131,8 @@ const PORT = process.env.PORT || 5000;
     } catch (err) {
       console.error('Startup migration failed:', err);
     }
+  } else {
+    console.log('RUN_MIGRATIONS_ON_START not set to true, skipping migrations');
   }
 
   httpServer.listen(PORT, () => {
