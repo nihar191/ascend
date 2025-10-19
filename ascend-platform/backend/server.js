@@ -17,6 +17,7 @@ import scoringRoutes from './routes/scoring.routes.js';
 import scoringService from './services/scoring.service.js';
 import rankingService from './services/ranking.service.js';
 import adminRoutes from './routes/admin.routes.js';
+import { createInitialLeague } from './scripts/createInitialLeague.js';
 
 dotenv.config();
 
@@ -133,6 +134,13 @@ const PORT = process.env.PORT || 5000;
     }
   } else {
     console.log('RUN_MIGRATIONS_ON_START not set to true, skipping migrations');
+  }
+
+  // Create initial league and season if they don't exist
+  try {
+    await createInitialLeague();
+  } catch (err) {
+    console.error('Failed to create initial league:', err);
   }
 
   httpServer.listen(PORT, () => {

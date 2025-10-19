@@ -11,6 +11,7 @@
         "seed": "psql -U postgres -d ascend_db -f seeds/seed.sql",
         "seed:ai": "node scripts/SeedAIProblems.js",
         "promote-admin": "node scripts/promoteToAdmin.js",
+        "create-league": "node scripts/createInitialLeague.js",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
     },
     "dependencies": {

@@ -3,6 +3,8 @@ import League from '../models/League.js';
 import Season from '../models/Season.js';
 import UserLeagueSeason from '../models/UserLeagueSeason.js';
 import pool from '../config/database.js';
+import matchmakingService from '../services/matchmaking.service.js';
+import { createInitialLeague } from '../scripts/createInitialLeague.js';
 
 /**
  * Get all leagues with their active seasons
@@ -236,6 +238,9 @@ export const createLeague = async (req, res) => {
       icon,
     });
 
+    // Restart matchmaking service now that we have a league
+    matchmakingService.restart();
+
     res.status(201).json({
       message: 'League created successfully',
       league,
@@ -266,6 +271,11 @@ export const createSeason = async (req, res) => {
       endDate,
       isActive,
     });
+
+    // Restart matchmaking service now that we have an active season
+    if (isActive) {
+      matchmakingService.restart();
+    }
 
     res.status(201).json({
       message: 'Season created successfully',
@@ -312,5 +322,18 @@ export const getTopPerformers = async (req, res) => {
   } catch (error) {
     console.error('Get top performers error:', error);
     res.status(500).json({ error: 'Failed to fetch top performers' });
+  }
+};
+
+/**
+ * Create initial league and season (admin only)
+ */
+export const createInitialLeagueEndpoint = async (req, res) => {
+  try {
+    await createInitialLeague();
+    res.json({ message: 'Initial league and season created successfully' });
+  } catch (error) {
+    console.error('Create initial league error:', error);
+    res.status(500).json({ error: 'Failed to create initial league' });
   }
 };

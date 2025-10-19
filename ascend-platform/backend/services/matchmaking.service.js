@@ -49,6 +49,15 @@ class MatchmakingService {
   }
 
   /**
+   * Restart matchmaking service (useful after creating leagues)
+   */
+  restart() {
+    this.stop();
+    this.start();
+    console.log('🔄 Matchmaking service restarted');
+  }
+
+  /**
    * Add player to matchmaking queue
    */
   joinQueue(userId, rating, matchType = '1v1', preferences = {}, socketId = null) {
@@ -132,6 +141,20 @@ class MatchmakingService {
    * Process matchmaking queues
    */
   async processQueues() {
+    // Check if we have any leagues first
+    try {
+      const leagues = await League.findAll();
+      if (!leagues || leagues.length === 0) {
+        console.log('⚠️  No leagues found. Stopping matchmaking service.');
+        this.stop();
+        return;
+      }
+    } catch (error) {
+      console.log('⚠️  Error checking leagues. Stopping matchmaking service.');
+      this.stop();
+      return;
+    }
+
     for (const matchType in this.queues) {
       const queueSize = this.queues[matchType].length;
       const minPlayers = this._getMinPlayers(matchType);

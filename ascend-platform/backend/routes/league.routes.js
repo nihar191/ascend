@@ -53,4 +53,11 @@ router.post(
   leagueController.endSeason
 );
 
+router.post(
+  '/create-initial',
+  authenticate,
+  requireAdmin,
+  leagueController.createInitialLeagueEndpoint
+);
+
 export default router;
