@@ -4,20 +4,22 @@ import { leaguesAPI } from '../services/api';
 import { Trophy, Medal, Crown } from 'lucide-react';
 
 const LeaderboardPage = () => {
-  const [leagues, setLeagues] = useState([]);
-  const [selectedSeason, setSelectedSeason] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('global'); // 'global' or 'season'
+  const [leagues, setLeagues] = useState([]);
+  const [selectedSeason, setSelectedSeason] = useState(null);
 
   useEffect(() => {
+    fetchGlobalLeaderboard();
     fetchLeagues();
   }, []);
 
   useEffect(() => {
-    if (selectedSeason) {
-      fetchLeaderboard();
+    if (selectedSeason && viewMode === 'season') {
+      fetchSeasonLeaderboard();
     }
-  }, [selectedSeason]);
+  }, [selectedSeason, viewMode]);
 
   const fetchLeagues = async () => {
     try {
@@ -28,18 +30,28 @@ const LeaderboardPage = () => {
       }
     } catch (error) {
       console.error('Failed to fetch leagues:', error);
+    }
+  };
+
+  const fetchGlobalLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const response = await leaguesAPI.getGlobalLeaderboard({ limit: 50 });
+      setLeaderboard(response.data.leaderboard);
+    } catch (error) {
+      console.error('Failed to fetch global leaderboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchLeaderboard = async () => {
+  const fetchSeasonLeaderboard = async () => {
     setLoading(true);
     try {
       const response = await leaguesAPI.getLeaderboard(selectedSeason, { limit: 50 });
       setLeaderboard(response.data.leaderboard);
     } catch (error) {
-      console.error('Failed to fetch leaderboard:', error);
+      console.error('Failed to fetch season leaderboard:', error);
     } finally {
       setLoading(false);
     }
@@ -60,24 +72,51 @@ const LeaderboardPage = () => {
           Global Leaderboard
         </h1>
 
-        {/* Season Selector */}
+        {/* View Mode Selector */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select League
-          </label>
-          <select
-            className="input-field max-w-xs"
-            value={selectedSeason || ''}
-            onChange={(e) => setSelectedSeason(e.target.value)}
-          >
-            {leagues.map((league) => (
-              league.activeSeason && (
-                <option key={league.activeSeason.id} value={league.activeSeason.id}>
-                  {league.name} - Season {league.activeSeason.season_number}
-                </option>
-              )
-            ))}
-          </select>
+          <div className="flex space-x-4 mb-4">
+            <button
+              onClick={() => setViewMode('global')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                viewMode === 'global'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              🌍 Global Leaderboard
+            </button>
+            <button
+              onClick={() => setViewMode('season')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                viewMode === 'season'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              🏆 Season Leaderboard
+            </button>
+          </div>
+          
+          {viewMode === 'season' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select League Season
+              </label>
+              <select
+                className="input-field max-w-xs"
+                value={selectedSeason || ''}
+                onChange={(e) => setSelectedSeason(e.target.value)}
+              >
+                {leagues.map((league) => (
+                  league.activeSeason && (
+                    <option key={league.activeSeason.id} value={league.activeSeason.id}>
+                      {league.name} - Season {league.activeSeason.season_number}
+                    </option>
+                  )
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Leaderboard */}
@@ -109,14 +148,19 @@ const LeaderboardPage = () => {
                     </p>
                     <p className="text-sm text-gray-600">
                       Rating: {player.rating} • Matches: {player.matches_played}
+                      {viewMode === 'global' && player.win_rate !== undefined && (
+                        <span> • Win Rate: {player.win_rate}%</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-primary-600">
-                    {player.points}
+                    {viewMode === 'global' ? player.rating : player.points}
                   </p>
-                  <p className="text-xs text-gray-500">points</p>
+                  <p className="text-xs text-gray-500">
+                    {viewMode === 'global' ? 'rating' : 'points'}
+                  </p>
                 </div>
               </div>
             ))}

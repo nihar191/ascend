@@ -128,6 +128,21 @@ class User {
 
     return result.rows[0];
   }
+
+  /**
+   * Update user rating
+   */
+  static async updateRating(userId, newRating) {
+    const query = `
+      UPDATE users
+      SET rating = $2
+      WHERE id = $1
+      RETURNING id, username, rating
+    `;
+
+    const result = await pool.query(query, [userId, newRating]);
+    return result.rows[0];
+  }
 }
 
 export default User;

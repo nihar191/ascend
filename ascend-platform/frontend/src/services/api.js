@@ -45,6 +45,7 @@ export const problemsAPI = {
 export const leaguesAPI = {
   getAll: () => api.get('/leagues'),
   getLeaderboard: (seasonId, params) => api.get(`/leagues/seasons/${seasonId}/leaderboard`, { params }),
+  getGlobalLeaderboard: (params) => api.get('/leagues/global-leaderboard', { params }),
   joinSeason: (seasonId) => api.post(`/leagues/seasons/${seasonId}/join`),
 };
 

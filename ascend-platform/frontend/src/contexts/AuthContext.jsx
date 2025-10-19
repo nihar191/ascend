@@ -8,7 +8,10 @@ const AuthContext = createContext(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (!context) {
+    console.error('useAuth must be used within AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
+  }
   return context;
 };
 
@@ -20,7 +23,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       fetchProfile();
-      socketService.connect(token);
+      // Delay socket connection to ensure auth is stable
+      setTimeout(() => {
+        socketService.connect(token);
+      }, 100);
     } else {
       setLoading(false);
     }
@@ -28,8 +34,12 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async () => {
     try {
+      console.log('🔄 Fetching updated profile...');
       const response = await authAPI.getProfile();
+      console.log('📊 Raw profile data from API:', response.data);
+      console.log('📊 Stats in response:', response.data.stats);
       setUser(response.data);
+      console.log('✅ Profile updated:', response.data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       logout();
@@ -84,6 +94,12 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out');
   };
 
+  const refreshProfile = async () => {
+    if (token) {
+      await fetchProfile();
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -91,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       logout,
+      refreshProfile,
       isAuthenticated: !!user,
       isAdmin: user?.role === 'admin',
     }}>

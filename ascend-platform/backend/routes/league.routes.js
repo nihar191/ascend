@@ -10,6 +10,7 @@ const router = express.Router();
 // Public routes (with optional auth for personalized data)
 router.get('/', leagueController.getAllLeagues);
 router.get('/top-performers', leagueController.getTopPerformers);
+router.get('/global-leaderboard', leagueController.getGlobalLeaderboard);
 router.get('/:id', leagueController.getLeague);
 router.get('/seasons/:seasonId/leaderboard', optionalAuth, leagueController.getSeasonLeaderboard);
 

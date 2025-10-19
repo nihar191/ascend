@@ -1,9 +1,9 @@
 // frontend/src/pages/ProfilePage.jsx
 import { useAuth } from '../contexts/AuthContext';
-import { Trophy, Target, Award } from 'lucide-react';
+import { Trophy, Target, Award, RefreshCw } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const winRate = user?.stats?.totalMatches > 0
     ? ((user.stats.wins / user.stats.totalMatches) * 100).toFixed(1)
@@ -24,6 +24,13 @@ const ProfilePage = () => {
             </h1>
             <p className="text-gray-600">@{user?.username}</p>
             <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
+            <button
+              onClick={refreshProfile}
+              className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 flex items-center gap-1"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Stats
+            </button>
           </div>
         </div>
       </div>

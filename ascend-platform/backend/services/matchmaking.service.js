@@ -246,19 +246,14 @@ class MatchmakingService {
       throw new Error('No active season available');
     }
 
-    // Select problem based on difficulty preference
+    // Get difficulty preference (we'll generate the problem live when match starts)
     const difficulty = players[0].preferences.difficulty;
-    const problem = await Problem.getRandomByDifficulty(difficulty);
 
-    if (!problem) {
-      throw new Error(`No ${difficulty} problems available`);
-    }
-
-    // Create match
+    // Create match without a specific problem (will be generated live)
     const match = await Match.create({
       seasonId: season.id,
       matchType,
-      problemId: problem.id,
+      problemId: null, // No problem assigned yet - will be generated live
       durationMinutes: 15,
     });
 
@@ -273,11 +268,23 @@ class MatchmakingService {
     }
 
     // Store match metadata for Socket.IO
-    this.lobbies.set(match.id, {
+    const lobbyData = {
       matchId: match.id,
-      players: players.map(p => ({ userId: p.userId, socketId: p.socketId })),
+      players: players.map(p => ({ 
+        userId: p.userId, 
+        socketId: p.socketId,
+        preferences: p.preferences // ✅ Include preferences for problem generation
+      })),
       createdAt: Date.now(),
+    };
+    
+    this.lobbies.set(match.id, lobbyData);
+    console.log(`🏠 Lobby created for match ${match.id}:`, {
+      players: lobbyData.players.length,
+      preferences: lobbyData.players[0]?.preferences
     });
+    console.log(`   Total lobbies now:`, this.lobbies.size);
+    console.log(`   Lobby keys:`, Array.from(this.lobbies.keys()));
 
     // Notify players via Socket.IO (if io instance is available)
     if (global.io && global.io.notifyMatchFound) {

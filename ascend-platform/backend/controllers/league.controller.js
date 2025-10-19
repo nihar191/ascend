@@ -2,6 +2,7 @@
 import League from '../models/League.js';
 import Season from '../models/Season.js';
 import UserLeagueSeason from '../models/UserLeagueSeason.js';
+import pool from '../config/database.js';
 
 /**
  * Get all leagues with their active seasons
@@ -56,6 +57,59 @@ export const getLeague = async (req, res) => {
   } catch (error) {
     console.error('Get league error:', error);
     res.status(500).json({ error: 'Failed to fetch league' });
+  }
+};
+
+/**
+ * Get global leaderboard (all users by rating)
+ */
+export const getGlobalLeaderboard = async (req, res) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const query = `
+      SELECT 
+        ROW_NUMBER() OVER (ORDER BY u.rating DESC, u.total_matches ASC) as rank,
+        u.id as userId,
+        u.username,
+        u.display_name,
+        u.avatar_url,
+        u.rating,
+        u.total_matches as matches_played,
+        u.wins,
+        u.losses,
+        CASE 
+          WHEN u.total_matches > 0 THEN ROUND((u.wins::numeric / u.total_matches) * 100, 1)
+          ELSE 0 
+        END as win_rate
+      FROM users u
+      ORDER BY u.rating DESC, u.total_matches ASC
+      LIMIT $1 OFFSET $2
+    `;
+
+    const result = await pool.query(query, [parseInt(limit), offset]);
+    
+    // Get total count
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM users'
+    );
+    
+    const totalUsers = parseInt(countResult.rows[0].count);
+
+    res.json({
+      leaderboard: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalUsers,
+        totalPages: Math.ceil(totalUsers / parseInt(limit)),
+      },
+    });
+
+  } catch (error) {
+    console.error('Get global leaderboard error:', error);
+    res.status(500).json({ error: 'Failed to fetch global leaderboard' });
   }
 };
 

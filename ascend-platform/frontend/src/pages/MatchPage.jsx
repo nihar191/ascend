@@ -1,6 +1,7 @@
 // frontend/src/pages/MatchPage.jsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { matchesAPI } from '../services/api';
 import socketService from '../services/socket';
 import CodeEditor from '../components/match/CodeEditor';
@@ -10,13 +11,35 @@ import toast from 'react-hot-toast';
 const MatchPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [match, setMatch] = useState(null);
   const [problem, setProblem] = useState(null);
-  const [code, setCode] = useState('// Write your solution here\n\n');
+  const [language, setLanguage] = useState('javascript');
+  const [code, setCode] = useState(() => {
+    // Initialize with JavaScript template
+    return '// Write your solution here\n\n';
+  });
+
+  // Language-specific code templates
+  const getCodeTemplate = (lang) => {
+    switch (lang) {
+      case 'python':
+        return '# Write your solution here\n\ndef solution():\n    pass\n';
+      case 'java':
+        return '// Write your solution here\n\npublic class Solution {\n    public static void main(String[] args) {\n        \n    }\n}\n';
+      case 'cpp':
+        return '// Write your solution here\n\n#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}\n';
+      case 'javascript':
+      default:
+        return '// Write your solution here\n\n';
+    }
+  };
   const [timeLeft, setTimeLeft] = useState(null);
   const [scoreboard, setScoreboard] = useState([]);
   const [matchStatus, setMatchStatus] = useState('waiting');
   const [submitting, setSubmitting] = useState(false);
+  const [loadingProblem, setLoadingProblem] = useState(false);
+  const [submissionReceived, setSubmissionReceived] = useState(false);
 
   useEffect(() => {
     fetchMatch();
@@ -31,12 +54,30 @@ const MatchPage = () => {
     };
   }, [id]);
 
+  // Timer countdown effect
+  useEffect(() => {
+    if (timeLeft && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setMatchStatus('completed');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [timeLeft]);
+
   const fetchMatch = async () => {
     try {
       const response = await matchesAPI.getOne(id);
       setMatch(response.data);
       
       if (response.data.status === 'waiting') {
+        setLoadingProblem(true);
         socketService.joinLobby(id);
       }
     } catch (error) {
@@ -49,7 +90,8 @@ const MatchPage = () => {
     socketService.onMatchStarted((data) => {
       setMatchStatus('in_progress');
       setProblem(data.problem);
-      setTimeLeft(data.duration);
+      setTimeLeft(Math.floor(data.duration / 1000)); // Convert milliseconds to seconds
+      setLoadingProblem(false);
       toast.success('Match started!');
     });
 
@@ -59,11 +101,35 @@ const MatchPage = () => {
 
     socketService.onSubmissionResult((data) => {
       setSubmitting(false);
+      console.log('📥 Received submission result:', data);
       if (data.status === 'accepted') {
         toast.success(`Accepted! Score: ${data.score}`);
+        // End the match when someone gets accepted
+        setMatchStatus('completed');
+        setTimeLeft(0);
+        toast.success('Match completed! Redirecting to dashboard...', { duration: 3000 });
+        // Refresh profile before redirecting
+        refreshProfile();
+        setTimeout(() => navigate('/dashboard'), 3000);
       } else {
         toast.error(`${data.status} - ${data.passedTests}/${data.totalTests} tests passed`);
       }
+    });
+
+    // Add handler for submission received confirmation
+    socketService.on('submission:received', (data) => {
+      console.log('📥 Submission received confirmation:', data);
+      if (!submissionReceived) {
+        setSubmissionReceived(true);
+        toast.loading('Submission received, judging...', { duration: 2000 });
+      }
+    });
+
+    // Add handler for submission errors
+    socketService.on('submission:error', (data) => {
+      setSubmitting(false);
+      console.log('❌ Submission error:', data);
+      toast.error(`Submission failed: ${data.message}`);
     });
 
     socketService.onScoreboardUpdate((data) => {
@@ -72,9 +138,31 @@ const MatchPage = () => {
 
     socketService.onMatchEnded((data) => {
       setMatchStatus('completed');
-      toast.success('Match ended!');
+      console.log('🏆 Match ended:', data);
+      
+      if (data.winner) {
+        toast.success(`🏆 ${data.winner.username} won the match!`, { duration: 5000 });
+      } else {
+        toast.success('Match ended!', { duration: 3000 });
+      }
+      
+      // Show final scoreboard
+      if (data.finalScoreboard && data.finalScoreboard.length > 0) {
+        console.log('📊 Final scoreboard:', data.finalScoreboard);
+        setScoreboard(data.finalScoreboard);
+      }
+      
+      // Refresh profile when match ends
+      refreshProfile();
+      
       setTimeout(() => navigate('/dashboard'), 5000);
     });
+  };
+
+  const handleLanguageChange = (newLanguage) => {
+    setLanguage(newLanguage);
+    // Update code template when language changes
+    setCode(getCodeTemplate(newLanguage));
   };
 
   const handleSubmit = async () => {
@@ -83,9 +171,60 @@ const MatchPage = () => {
       return;
     }
 
+    // Frontend validation
+    if (code.length > 50000) {
+      toast.error('Code exceeds maximum length (50KB)');
+      return;
+    }
+
+    // Language-specific validation
+    const validationError = validateCodeFrontend(code, language);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    console.log('Submitting code:', { matchId: id, language, codeLength: code.length });
     setSubmitting(true);
-    socketService.submitCode(id, code, 'javascript');
+    setSubmissionReceived(false); // Reset submission received flag
+    socketService.submitCode(id, code, language);
     toast.loading('Submitting code...', { duration: 1000 });
+  };
+
+  const validateCodeFrontend = (code, language) => {
+    console.log(`🔍 Frontend validation for ${language} code (${code.length} chars)`);
+    
+    // DISABLED: Frontend validation for testing
+    console.log(`✅ Frontend validation passed - sending to backend (validation disabled)`);
+    return null;
+
+    /*
+    const forbiddenPatterns = getForbiddenPatternsFrontend(language);
+    console.log(`🔍 Checking ${forbiddenPatterns.length} obvious patterns`);
+    
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(code)) {
+        console.log(`❌ Frontend detected obvious security issue: ${pattern}`);
+        return 'Code contains obvious security issues';
+      }
+    }
+    
+    console.log(`✅ Frontend validation passed - sending to backend`);
+    return null;
+    */
+  };
+
+  const getForbiddenPatternsFrontend = (language) => {
+    // Only catch the most obvious security issues in frontend
+    // Let backend handle detailed validation
+    const obviousPatterns = [
+      /eval\s*\(/gi,        // eval function
+      /exec\s*\(/gi,        // exec function
+      /spawn\s*\(/gi,       // spawn function
+    ];
+
+    // Very minimal frontend validation - just the most dangerous patterns
+    return obviousPatterns;
   };
 
   const formatTime = (seconds) => {
@@ -121,7 +260,17 @@ const MatchPage = () => {
         </div>
 
         {/* Problem */}
-        {problem && (
+        {loadingProblem ? (
+          <div className="card">
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">Generating Problem...</h3>
+                <p className="text-sm text-gray-500">Please wait while we prepare your coding challenge</p>
+              </div>
+            </div>
+          </div>
+        ) : problem ? (
           <div className="card">
             <h2 className="text-xl font-bold mb-3">{problem.title}</h2>
             <span className={`badge badge-${problem.difficulty} mb-3`}>
@@ -141,7 +290,7 @@ const MatchPage = () => {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Scoreboard */}
         <div className="card">
@@ -174,7 +323,8 @@ const MatchPage = () => {
             code={code}
             onChange={setCode}
             onSubmit={handleSubmit}
-            language="javascript"
+            language={language}
+            onLanguageChange={handleLanguageChange}
             disabled={matchStatus !== 'in_progress' || submitting}
           />
         </div>

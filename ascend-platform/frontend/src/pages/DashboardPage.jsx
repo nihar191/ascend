@@ -8,26 +8,49 @@ import { Play, Trophy, Clock, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [queueing, setQueueing] = useState(false);
   const [activeMatches, setActiveMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+  const [userRank, setUserRank] = useState(null);
 
-  // Fetch dashboard data on mount
+  // Fetch dashboard data on mount and when returning from match
   useEffect(() => {
     fetchData();
+    
+    // Refresh data when returning from a match
+    const handleFocus = () => {
+      console.log('🔄 Dashboard focused, refreshing data...');
+      fetchData();
+      refreshProfile(); // Also refresh user profile data
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const fetchData = async () => {
     try {
-      const [matchesRes, leaguesRes] = await Promise.all([
+      const [matchesRes, leaguesRes, leaderboardRes] = await Promise.all([
         matchesAPI.getActive(),
         leaguesAPI.getAll(),
+        leaguesAPI.getGlobalLeaderboard({ limit: 1000 }), // Get all users to find rank
       ]);
       setActiveMatches(matchesRes.data.matches);
       setLeagues(leaguesRes.data.leagues);
+      
+      // Find user's rank in global leaderboard
+      if (user && leaderboardRes.data.leaderboard) {
+        const userRankIndex = leaderboardRes.data.leaderboard.findIndex(
+          player => player.userId === user.id
+        );
+        setUserRank(userRankIndex >= 0 ? userRankIndex + 1 : null);
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
     }
@@ -35,14 +58,19 @@ const DashboardPage = () => {
 
   // Socket handler for "match found": redirect both players
   useEffect(() => {
+    console.log('🎯 Setting up match_found listener in DashboardPage');
     const handler = (data) => {
-      console.log('Received matchmaking:match_found event:', data); // <--- ADD THIS LINE
+      console.log('🎉 MATCH FOUND! Received matchmaking:match_found event:', data);
       toast.success('Match found!');
       setQueueing(false);
       navigate(`/match/${data.matchId}`);
     };
+
+    // Set up listener immediately - socket service will handle connection timing
     socketService.onMatchFound(handler);
+
     return () => {
+      console.log('🧹 Cleaning up match_found listener in DashboardPage');
       socketService.off('matchmaking:match_found');
     };
   }, [navigate]);
@@ -99,6 +127,12 @@ const DashboardPage = () => {
             <Trophy className="h-5 w-5 mr-2 text-yellow-600" />
             Wins: <span className="font-semibold ml-1">{user?.stats?.wins || 0}</span>
           </div>
+          {userRank && (
+            <div className="flex items-center">
+              <Trophy className="h-5 w-5 mr-2 text-purple-600" />
+              Global Rank: <span className="font-semibold ml-1">#{userRank}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -146,26 +180,37 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Active Matches */}
+      {/* Active Matches - Only show if user has active matches */}
       {activeMatches.length > 0 && (
         <div className="card">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Active Matches</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+            <Clock className="h-6 w-6 mr-2 text-primary-600" />
+            Your Active Matches
+          </h2>
           <div className="space-y-3">
             {activeMatches.map((match) => (
               <div
                 key={match.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 cursor-pointer transition-all duration-200 border border-blue-200"
                 onClick={() => navigate(`/match/${match.id}`)}
               >
-                <div>
-                  <p className="font-semibold text-gray-900">{match.problem_title}</p>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900">{match.problem_title || 'Live Problem'}</p>
                   <p className="text-sm text-gray-600">
-                    Status: {match.status} • {match.match_type}
+                    {match.status === 'in_progress' ? '🟢 In Progress' : '⏳ Waiting'} • {match.match_type?.toUpperCase() || '1v1'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Difficulty: {match.problem_difficulty || 'Medium'}
                   </p>
                 </div>
-                <button className="btn-primary text-sm">
-                  Join Match
-                </button>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-500">
+                    {match.status === 'in_progress' ? 'Continue' : 'Join'}
+                  </span>
+                  <button className="btn-primary text-sm px-4 py-2">
+                    {match.status === 'in_progress' ? 'Continue' : 'Join Match'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
