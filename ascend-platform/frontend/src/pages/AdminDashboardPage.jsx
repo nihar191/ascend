@@ -32,11 +32,34 @@ const AdminDashboardPage = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showCreateLeague, setShowCreateLeague] = useState(false);
   const [showCreateSeason, setShowCreateSeason] = useState(false);
+  const [showEditLeague, setShowEditLeague] = useState(false);
+  const [editingLeague, setEditingLeague] = useState(null);
+  const [leagueForm, setLeagueForm] = useState({
+    name: '',
+    description: '',
+    maxParticipants: 1000,
+    isPublic: true
+  });
+  const [problems, setProblems] = useState([]);
+  const [showCreateProblem, setShowCreateProblem] = useState(false);
+  const [problemForm, setProblemForm] = useState({
+    title: '',
+    description: '',
+    difficulty: 'medium',
+    points: 100,
+    timeLimitMs: 2000,
+    memoryLimitMb: 256,
+    tags: [],
+    sampleInput: '',
+    sampleOutput: '',
+    testCases: []
+  });
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Activity },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'leagues', label: 'Leagues', icon: Trophy },
+    { id: 'problems', label: 'Problems', icon: Target },
     { id: 'matches', label: 'Matches', icon: Target },
   ];
 
@@ -45,6 +68,7 @@ const AdminDashboardPage = () => {
     fetchUsers();
     fetchLeagues();
     fetchMatches();
+    fetchProblems();
   }, []);
 
   useEffect(() => {
@@ -162,6 +186,95 @@ const AdminDashboardPage = () => {
 
   const clearSelection = () => {
     setSelectedUsers([]);
+  };
+
+  // League CRUD operations
+  const handleCreateLeague = async (e) => {
+    e.preventDefault();
+    try {
+      await adminAPI.createLeague(leagueForm);
+      setLeagueForm({ name: '', description: '', maxParticipants: 1000, isPublic: true });
+      setShowCreateLeague(false);
+      fetchLeagues();
+    } catch (error) {
+      console.error('Failed to create league:', error);
+    }
+  };
+
+  const handleEditLeague = (league) => {
+    setEditingLeague(league);
+    setLeagueForm({
+      name: league.name,
+      description: league.description,
+      maxParticipants: league.max_participants,
+      isPublic: league.is_public
+    });
+    setShowEditLeague(true);
+  };
+
+  const handleUpdateLeague = async (e) => {
+    e.preventDefault();
+    try {
+      await adminAPI.updateLeague(editingLeague.id, leagueForm);
+      setShowEditLeague(false);
+      setEditingLeague(null);
+      fetchLeagues();
+    } catch (error) {
+      console.error('Failed to update league:', error);
+    }
+  };
+
+  const handleDeleteLeague = async (leagueId) => {
+    if (window.confirm('Are you sure you want to delete this league?')) {
+      try {
+        await adminAPI.deleteLeague(leagueId);
+        fetchLeagues();
+      } catch (error) {
+        console.error('Failed to delete league:', error);
+      }
+    }
+  };
+
+  // Problem CRUD operations
+  const fetchProblems = async () => {
+    try {
+      const response = await adminAPI.getAllProblems?.() || { data: { problems: [] } };
+      setProblems(response.data.problems || []);
+    } catch (error) {
+      console.error('Failed to fetch problems:', error);
+    }
+  };
+
+  const handleCreateProblem = async (e) => {
+    e.preventDefault();
+    try {
+      await adminAPI.createProblem?.(problemForm);
+      setProblemForm({
+        title: '',
+        description: '',
+        difficulty: 'medium',
+        points: 100,
+        timeLimitMs: 2000,
+        memoryLimitMb: 256,
+        tags: [],
+        sampleInput: '',
+        sampleOutput: '',
+        testCases: []
+      });
+      setShowCreateProblem(false);
+      fetchProblems();
+    } catch (error) {
+      console.error('Failed to create problem:', error);
+    }
+  };
+
+  const handleBulkGenerateProblems = async () => {
+    try {
+      await adminAPI.bulkGenerateProblems({ count: 5, difficulty: 'medium' });
+      fetchProblems();
+    } catch (error) {
+      console.error('Failed to generate problems:', error);
+    }
   };
 
   if (loading) {
@@ -593,11 +706,17 @@ const AdminDashboardPage = () => {
                     <span>{league.participant_count} participants</span>
                   </div>
                   <div className="mt-4 flex space-x-2">
-                    <button className="btn-outline text-sm">
+                    <button 
+                      onClick={() => handleEditLeague(league)}
+                      className="btn-outline text-sm"
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </button>
-                    <button className="btn-outline text-sm">
+                    <button 
+                      onClick={() => handleDeleteLeague(league.id)}
+                      className="btn-outline text-sm text-red-600 hover:text-red-800"
+                    >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Delete
                     </button>
@@ -688,6 +807,244 @@ const AdminDashboardPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Problems Tab */}
+        {activeTab === 'problems' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900">Problems Management</h3>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowCreateProblem(true)}
+                  className="btn-primary flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Problem
+                </button>
+                <button
+                  onClick={handleBulkGenerateProblems}
+                  className="btn-secondary flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Generate AI Problems
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {problems.map((problem) => (
+                <div key={problem.id} className="card">
+                  <div className="flex justify-between items-start mb-4">
+                    <h4 className="text-lg font-semibold text-gray-900">{problem.title}</h4>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      problem.is_active 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {problem.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{problem.description}</p>
+                  <div className="flex justify-between items-center text-sm text-gray-500">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      problem.difficulty === 'easy' 
+                        ? 'bg-green-100 text-green-800'
+                        : problem.difficulty === 'medium'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {problem.difficulty}
+                    </span>
+                    <span>{problem.points} points</span>
+                  </div>
+                  <div className="mt-4 flex space-x-2">
+                    <button className="btn-outline text-sm">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </button>
+                    <button className="btn-outline text-sm text-red-600 hover:text-red-800">
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Create League Modal */}
+        {showCreateLeague && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Create New League</h3>
+              <form onSubmit={handleCreateLeague} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="League Name"
+                  value={leagueForm.name}
+                  onChange={(e) => setLeagueForm({...leagueForm, name: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <textarea
+                  placeholder="Description"
+                  value={leagueForm.description}
+                  onChange={(e) => setLeagueForm({...leagueForm, description: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+                <input
+                  type="number"
+                  placeholder="Max Participants"
+                  value={leagueForm.maxParticipants}
+                  onChange={(e) => setLeagueForm({...leagueForm, maxParticipants: parseInt(e.target.value)})}
+                  className="w-full p-2 border rounded"
+                />
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={leagueForm.isPublic}
+                    onChange={(e) => setLeagueForm({...leagueForm, isPublic: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label>Public League</label>
+                </div>
+                <div className="flex space-x-2">
+                  <button type="submit" className="btn-primary flex-1">Create</button>
+                  <button type="button" onClick={() => setShowCreateLeague(false)} className="btn-outline flex-1">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit League Modal */}
+        {showEditLeague && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Edit League</h3>
+              <form onSubmit={handleUpdateLeague} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="League Name"
+                  value={leagueForm.name}
+                  onChange={(e) => setLeagueForm({...leagueForm, name: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <textarea
+                  placeholder="Description"
+                  value={leagueForm.description}
+                  onChange={(e) => setLeagueForm({...leagueForm, description: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  rows="3"
+                />
+                <input
+                  type="number"
+                  placeholder="Max Participants"
+                  value={leagueForm.maxParticipants}
+                  onChange={(e) => setLeagueForm({...leagueForm, maxParticipants: parseInt(e.target.value)})}
+                  className="w-full p-2 border rounded"
+                />
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={leagueForm.isPublic}
+                    onChange={(e) => setLeagueForm({...leagueForm, isPublic: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label>Public League</label>
+                </div>
+                <div className="flex space-x-2">
+                  <button type="submit" className="btn-primary flex-1">Update</button>
+                  <button type="button" onClick={() => setShowEditLeague(false)} className="btn-outline flex-1">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Create Problem Modal */}
+        {showCreateProblem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Create New Problem</h3>
+              <form onSubmit={handleCreateProblem} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Problem Title"
+                  value={problemForm.title}
+                  onChange={(e) => setProblemForm({...problemForm, title: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <textarea
+                  placeholder="Problem Description"
+                  value={problemForm.description}
+                  onChange={(e) => setProblemForm({...problemForm, description: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  rows="4"
+                  required
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <select
+                    value={problemForm.difficulty}
+                    onChange={(e) => setProblemForm({...problemForm, difficulty: e.target.value})}
+                    className="p-2 border rounded"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Points"
+                    value={problemForm.points}
+                    onChange={(e) => setProblemForm({...problemForm, points: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    placeholder="Time Limit (ms)"
+                    value={problemForm.timeLimitMs}
+                    onChange={(e) => setProblemForm({...problemForm, timeLimitMs: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Memory Limit (MB)"
+                    value={problemForm.memoryLimitMb}
+                    onChange={(e) => setProblemForm({...problemForm, memoryLimitMb: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <textarea
+                    placeholder="Sample Input"
+                    value={problemForm.sampleInput}
+                    onChange={(e) => setProblemForm({...problemForm, sampleInput: e.target.value})}
+                    className="p-2 border rounded"
+                    rows="3"
+                  />
+                  <textarea
+                    placeholder="Sample Output"
+                    value={problemForm.sampleOutput}
+                    onChange={(e) => setProblemForm({...problemForm, sampleOutput: e.target.value})}
+                    className="p-2 border rounded"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button type="submit" className="btn-primary flex-1">Create</button>
+                  <button type="button" onClick={() => setShowCreateProblem(false)} className="btn-outline flex-1">Cancel</button>
+                </div>
+              </form>
             </div>
           </div>
         )}
