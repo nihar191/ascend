@@ -42,6 +42,8 @@ const AdminDashboardPage = () => {
   });
   const [problems, setProblems] = useState([]);
   const [showCreateProblem, setShowCreateProblem] = useState(false);
+  const [showEditProblem, setShowEditProblem] = useState(false);
+  const [editingProblem, setEditingProblem] = useState(null);
   const [problemForm, setProblemForm] = useState({
     title: '',
     description: '',
@@ -274,6 +276,77 @@ const AdminDashboardPage = () => {
       fetchProblems();
     } catch (error) {
       console.error('Failed to generate problems:', error);
+    }
+  };
+
+  // Problem Edit/Delete functions
+  const handleEditProblem = (problem) => {
+    setEditingProblem(problem);
+    setProblemForm({
+      title: problem.title,
+      description: problem.description,
+      difficulty: problem.difficulty,
+      points: problem.points,
+      timeLimitMs: problem.time_limit_ms,
+      memoryLimitMb: problem.memory_limit_mb,
+      tags: problem.tags.join(', '),
+      sampleInput: problem.sample_input,
+      sampleOutput: problem.sample_output
+    });
+    setShowEditProblem(true);
+  };
+
+  const handleUpdateProblem = async (e) => {
+    e.preventDefault();
+    try {
+      const tags = problemForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      await adminAPI.updateProblem(editingProblem.id, {
+        title: problemForm.title,
+        description: problemForm.description,
+        difficulty: problemForm.difficulty,
+        points: parseInt(problemForm.points),
+        timeLimitMs: parseInt(problemForm.timeLimitMs),
+        memoryLimitMb: parseInt(problemForm.memoryLimitMb),
+        tags,
+        sampleInput: problemForm.sampleInput,
+        sampleOutput: problemForm.sampleOutput
+      });
+
+      toast.success('Problem updated successfully');
+      setShowEditProblem(false);
+      setEditingProblem(null);
+      fetchProblems();
+    } catch (error) {
+      console.error('Failed to update problem:', error);
+      toast.error('Failed to update problem');
+    }
+  };
+
+  const handleDeleteProblem = async (problemId) => {
+    if (!confirm('Are you sure you want to delete this problem?')) return;
+    
+    try {
+      await adminAPI.deleteProblem(problemId);
+      toast.success('Problem deleted successfully');
+      fetchProblems();
+    } catch (error) {
+      console.error('Failed to delete problem:', error);
+      toast.error('Failed to delete problem');
+    }
+  };
+
+  // Match management functions
+  const handleForceEndMatch = async (matchId) => {
+    if (!confirm('Are you sure you want to force end this match?')) return;
+    
+    try {
+      await adminAPI.forceEndMatch(matchId);
+      toast.success('Match ended successfully');
+      fetchMatches();
+    } catch (error) {
+      console.error('Failed to end match:', error);
+      toast.error('Failed to end match');
     }
   };
 
@@ -798,7 +871,10 @@ const AdminDashboardPage = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {match.status === 'in_progress' && (
-                          <button className="text-red-600 hover:text-red-900">
+                          <button 
+                            onClick={() => handleForceEndMatch(match.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
                             Force End
                           </button>
                         )}
@@ -861,11 +937,17 @@ const AdminDashboardPage = () => {
                     <span>{problem.points} points</span>
                   </div>
                   <div className="mt-4 flex space-x-2">
-                    <button className="btn-outline text-sm">
+                    <button 
+                      onClick={() => handleEditProblem(problem)}
+                      className="btn-outline text-sm"
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </button>
-                    <button className="btn-outline text-sm text-red-600 hover:text-red-800">
+                    <button 
+                      onClick={() => handleDeleteProblem(problem.id)}
+                      className="btn-outline text-sm text-red-600 hover:text-red-800"
+                    >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Delete
                     </button>
@@ -1048,11 +1130,90 @@ const AdminDashboardPage = () => {
             </div>
           </div>
         )}
+
+        {/* Edit Problem Modal */}
+        {showEditProblem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">Edit Problem</h3>
+              <form onSubmit={handleUpdateProblem} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Problem Title"
+                  value={problemForm.title}
+                  onChange={(e) => setProblemForm({...problemForm, title: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  required
+                />
+                <textarea
+                  placeholder="Problem Description"
+                  value={problemForm.description}
+                  onChange={(e) => setProblemForm({...problemForm, description: e.target.value})}
+                  className="w-full p-2 border rounded"
+                  rows="4"
+                  required
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <select
+                    value={problemForm.difficulty}
+                    onChange={(e) => setProblemForm({...problemForm, difficulty: e.target.value})}
+                    className="p-2 border rounded"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Points"
+                    value={problemForm.points}
+                    onChange={(e) => setProblemForm({...problemForm, points: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="number"
+                    placeholder="Time Limit (ms)"
+                    value={problemForm.timeLimitMs}
+                    onChange={(e) => setProblemForm({...problemForm, timeLimitMs: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Memory Limit (MB)"
+                    value={problemForm.memoryLimitMb}
+                    onChange={(e) => setProblemForm({...problemForm, memoryLimitMb: parseInt(e.target.value)})}
+                    className="p-2 border rounded"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <textarea
+                    placeholder="Sample Input"
+                    value={problemForm.sampleInput}
+                    onChange={(e) => setProblemForm({...problemForm, sampleInput: e.target.value})}
+                    className="p-2 border rounded"
+                    rows="3"
+                  />
+                  <textarea
+                    placeholder="Sample Output"
+                    value={problemForm.sampleOutput}
+                    onChange={(e) => setProblemForm({...problemForm, sampleOutput: e.target.value})}
+                    className="p-2 border rounded"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button type="submit" className="btn-primary flex-1">Update</button>
+                  <button type="button" onClick={() => setShowEditProblem(false)} className="btn-outline flex-1">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
           </div>
         </div>
       </div>
     </div>
   );
 };
-
-export default AdminDashboardPage;
