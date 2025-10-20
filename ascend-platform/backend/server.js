@@ -1,5 +1,7 @@
 // backend/server.js
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -102,6 +104,21 @@ process.on('SIGTERM', () => {
     console.log('Server closed');
     process.exit(0);
   });
+});
+
+// Serve frontend static assets (production)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, '../frontend/dist');
+
+app.use(express.static(clientDistPath));
+
+// SPA fallback: send index.html for non-API routes to support client-side routing
+app.get('*', (req, res, next) => {
+  const isApi = req.path.startsWith('/api');
+  const isSocket = req.path.startsWith('/socket.io');
+  if (isApi || isSocket) return next();
+  return res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 // Routes will be added in next steps
