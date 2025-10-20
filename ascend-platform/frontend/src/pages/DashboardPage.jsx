@@ -9,7 +9,7 @@ import { Play, Trophy, Clock, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DashboardPage = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, loading } = useAuth();
   const navigate = useNavigate();
   const [queueing, setQueueing] = useState(false);
   const [activeMatches, setActiveMatches] = useState([]);
@@ -55,13 +55,21 @@ const DashboardPage = () => {
 
   const fetchData = async () => {
     try {
+      console.log('🔄 Fetching dashboard data...');
       const [matchesRes, leaguesRes, leaderboardRes] = await Promise.all([
         matchesAPI.getActive(),
         leaguesAPI.getAll(),
         leaguesAPI.getGlobalLeaderboard({ limit: 1000 }), // Get all users to find rank
       ]);
-      setActiveMatches(matchesRes.data.matches);
-      setLeagues(leaguesRes.data.leagues);
+      
+      console.log('📊 Dashboard data fetched:', {
+        matches: matchesRes.data,
+        leagues: leaguesRes.data,
+        leaderboard: leaderboardRes.data
+      });
+      
+      setActiveMatches(matchesRes.data.matches || []);
+      setLeagues(leaguesRes.data.leagues || []);
       
       // Find user's rank in global leaderboard
       if (user && leaderboardRes.data.leaderboard) {
@@ -71,7 +79,9 @@ const DashboardPage = () => {
         setUserRank(userRankIndex >= 0 ? userRankIndex + 1 : null);
       }
     } catch (error) {
-      console.error('Failed to fetch data:', error);
+      console.error('❌ Failed to fetch dashboard data:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error('Failed to load dashboard data');
     }
   };
 

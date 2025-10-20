@@ -41,7 +41,9 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
       console.log('✅ Profile updated:', response.data);
     } catch (error) {
-      console.error('Failed to fetch profile:', error);
+      console.error('❌ Failed to fetch profile:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      console.error('Error status:', error.response?.status);
       logout();
     } finally {
       setLoading(false);
