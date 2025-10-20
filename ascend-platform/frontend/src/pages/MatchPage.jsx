@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { matchesAPI } from '../services/api';
 import socketService from '../services/socket';
+import { AppPersistence } from '../utils/persistence';
 import CodeEditor from '../components/match/CodeEditor';
 import { Clock, Users, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,8 +15,16 @@ const MatchPage = () => {
   const { refreshProfile } = useAuth();
   const [match, setMatch] = useState(null);
   const [problem, setProblem] = useState(null);
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState(() => {
+    const prefs = AppPersistence.getUserPreferences();
+    return prefs.language || 'javascript';
+  });
   const [code, setCode] = useState(() => {
+    // Try to restore saved code for this match
+    const savedState = AppPersistence.getMatchState(id);
+    if (savedState && savedState.code) {
+      return savedState.code;
+    }
     // Initialize with JavaScript template
     return '// Write your solution here\n\n';
   });
@@ -53,6 +62,23 @@ const MatchPage = () => {
       socketService.off('match:ended');
     };
   }, [id]);
+
+  // Save code changes to persistence
+  useEffect(() => {
+    if (code && match) {
+      AppPersistence.saveMatchState(id, {
+        code,
+        language,
+        matchStatus,
+        timeLeft
+      });
+    }
+  }, [code, language, matchStatus, timeLeft, id]);
+
+  // Save language preference
+  useEffect(() => {
+    AppPersistence.saveUserPreferences({ language });
+  }, [language]);
 
   // Timer countdown effect
   useEffect(() => {
@@ -139,6 +165,9 @@ const MatchPage = () => {
     socketService.onMatchEnded((data) => {
       setMatchStatus('completed');
       console.log('🏆 Match ended:', data);
+      
+      // Clear match state when match ends
+      AppPersistence.clearMatchState(id);
       
       if (data.winner) {
         toast.success(`🏆 ${data.winner.username} won the match!`, { duration: 5000 });

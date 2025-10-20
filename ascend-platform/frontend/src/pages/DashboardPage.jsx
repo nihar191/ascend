@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { matchesAPI, leaguesAPI } from '../services/api';
 import socketService from '../services/socket';
+import { AppPersistence } from '../utils/persistence';
 import { Play, Trophy, Clock, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -13,18 +14,31 @@ const DashboardPage = () => {
   const [queueing, setQueueing] = useState(false);
   const [activeMatches, setActiveMatches] = useState([]);
   const [leagues, setLeagues] = useState([]);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
+  const [selectedDifficulty, setSelectedDifficulty] = useState(() => {
+    const prefs = AppPersistence.getUserPreferences();
+    return prefs.selectedDifficulty;
+  });
   const [userRank, setUserRank] = useState(null);
 
   // Fetch dashboard data on mount and when returning from match
   useEffect(() => {
-    fetchData();
+    if (user) {
+      fetchData();
+      // Check if user was in queue before refresh
+      const queueState = AppPersistence.getQueueState();
+      if (queueState && queueState.queueing) {
+        setQueueing(true);
+        socketService.joinMatchmaking(queueState.data);
+      }
+    }
     
     // Refresh data when returning from a match
     const handleFocus = () => {
       console.log('🔄 Dashboard focused, refreshing data...');
-      fetchData();
-      refreshProfile(); // Also refresh user profile data
+      if (user) {
+        fetchData();
+        refreshProfile(); // Also refresh user profile data
+      }
     };
     
     window.addEventListener('focus', handleFocus);
@@ -32,7 +46,12 @@ const DashboardPage = () => {
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [user]); // Add user as dependency
+
+  // Save difficulty preference when changed
+  useEffect(() => {
+    AppPersistence.saveUserPreferences({ selectedDifficulty });
+  }, [selectedDifficulty]);
 
   const fetchData = async () => {
     try {
@@ -63,6 +82,7 @@ const DashboardPage = () => {
       console.log('🎉 MATCH FOUND! Received matchmaking:match_found event:', data);
       toast.success('Match found!');
       setQueueing(false);
+      AppPersistence.clearQueueState(); // Clear queue state when match is found
       navigate(`/match/${data.matchId}`);
     };
 
@@ -79,19 +99,28 @@ const DashboardPage = () => {
   // Join queue
   const handleJoinQueue = async () => {
     setQueueing(true);
+    const queueData = {
+      matchType: '1v1',
+      preferences: { difficulty: selectedDifficulty, rating: user?.rating },
+    };
+    
+    // Save queue state
+    AppPersistence.saveQueueState({
+      queueing: true,
+      data: queueData
+    });
+    
     try {
       await matchesAPI.joinQueue({
         matchType: '1v1',
         preferences: { difficulty: selectedDifficulty },
       });
-      socketService.joinMatchmaking({
-        matchType: '1v1',
-        preferences: { difficulty: selectedDifficulty, rating: user?.rating },
-      });
+      socketService.joinMatchmaking(queueData);
       toast.success('Searching for opponent...');
     } catch (error) {
       toast.error('Failed to join queue');
       setQueueing(false);
+      AppPersistence.clearQueueState();
     }
   };
 
@@ -101,11 +130,25 @@ const DashboardPage = () => {
       await matchesAPI.leaveQueue();
       socketService.leaveMatchmaking();
       setQueueing(false);
+      AppPersistence.clearQueueState();
       toast.success('Left queue');
     } catch (error) {
       toast.error('Failed to leave queue');
     }
   };
+
+  // Show loading state while user is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Loading Dashboard...</h2>
+          <p className="text-gray-500">Please wait while we load your data</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
