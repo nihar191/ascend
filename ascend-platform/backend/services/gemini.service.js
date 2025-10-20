@@ -28,6 +28,9 @@ class GeminiService {
     try {
       const prompt = this._buildProblemPrompt(difficulty, tags, hint);
       
+      console.log('🤖 Sending request to Gemini API...');
+      console.log('📝 Prompt length:', prompt.length);
+      
       const result = await this.model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: this.generationConfig,
@@ -35,6 +38,9 @@ class GeminiService {
 
       const response = result.response;
       const problemText = response.text();
+      
+      console.log('📥 Received response from Gemini');
+      console.log('📏 Response length:', problemText.length);
 
       // Parse the JSON response from Gemini
       const problemData = this._parseProblemResponse(problemText);
@@ -45,7 +51,14 @@ class GeminiService {
       };
 
     } catch (error) {
-      console.error('Gemini API error:', error);
+      console.error('❌ Gemini API error:', error.message);
+      console.error('🔍 Error type:', error.constructor.name);
+      
+      // Check if it's an API key issue
+      if (error.message.includes('API key') || error.message.includes('authentication')) {
+        console.error('🔑 Possible API key issue - check GEMINI_API_KEY');
+      }
+      
       return {
         success: false,
         error: error.message || 'Failed to generate problem',
@@ -60,39 +73,31 @@ class GeminiService {
     const tagsList = tags.length > 0 ? tags.join(', ') : 'any suitable topics';
     const hintText = hint ? `\nTheme/Hint: ${hint}` : '';
 
-    return `Generate a competitive programming problem. Difficulty: ${difficulty}, Topics: ${tagsList}${hintText}
+    return `Create a competitive programming problem.
 
-CRITICAL INSTRUCTIONS:
-1. Return ONLY valid JSON with NO markdown code blocks
-2. Use \\n for ALL line breaks in strings - NEVER use actual newlines
-3. Escape all special characters properly
-4. No extra text before or after the JSON
+Difficulty: ${difficulty}
+Topics: ${tagsList}${hintText}
+
+Return ONLY this JSON format (no markdown, no extra text):
 
 {
-  "title": "Problem Title",
-  "description": "Problem statement with constraints. Use \\n for line breaks.",
+  "title": "Problem Name",
+  "description": "Problem description here",
   "difficulty": "${difficulty}",
   "points": ${difficulty === 'easy' ? 100 : difficulty === 'medium' ? 200 : 300},
   "tags": ["${tags.length > 0 ? tags[0] : 'array'}"],
-  "sampleInput": "5\\n1 2 3 4 5",
-  "sampleOutput": "15",
+  "sampleInput": "3\\n1 2 3",
+  "sampleOutput": "6",
   "testCases": [
     {
       "input": "3\\n1 2 3",
       "output": "6",
-      "explanation": "Sum of array elements"
-    },
-    {
-      "input": "1\\n42",
-      "output": "42",
-      "explanation": "Single element"
+      "explanation": "Test case 1"
     }
   ],
   "timeLimitMs": 2000,
   "memoryLimitMb": 256
-}
-
-Generate exactly 3-5 test cases. Remember: use \\n for ALL line breaks, never actual newlines.`;
+}`;
   }
 
   /**
