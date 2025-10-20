@@ -53,7 +53,38 @@ export const leaguesAPI = {
 };
 
 export const adminAPI = {
+  // Dashboard
   getDashboardStats: () => api.get('/admin/dashboard/stats'),
+  getSystemLogs: (params) => api.get('/admin/logs', { params }),
+  
+  // User Management
+  getAllUsers: (params) => api.get('/admin/users', { params }),
+  getUserDetails: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.patch(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  banUser: (id, data) => api.post(`/admin/users/${id}/ban`, data),
+  resetUserStats: (id) => api.post(`/admin/users/${id}/reset-stats`),
+  bulkUpdateUsers: (data) => api.patch('/admin/users/bulk-update', data),
+  
+  // League Management
+  getAllLeagues: (params) => api.get('/admin/leagues', { params }),
+  createLeague: (data) => api.post('/admin/leagues', data),
+  updateLeague: (id, data) => api.patch(`/admin/leagues/${id}`, data),
+  deleteLeague: (id) => api.delete(`/admin/leagues/${id}`),
+  createSeason: (leagueId, data) => api.post(`/admin/leagues/${leagueId}/seasons`, data),
+  updateSeason: (id, data) => api.patch(`/admin/seasons/${id}`, data),
+  
+  // Problem Management
+  bulkGenerateProblems: (data) => api.post('/admin/problems/bulk-generate', data),
+  bulkUpdateProblems: (data) => api.patch('/admin/problems/bulk-update', data),
+  bulkDeleteProblems: (data) => api.delete('/admin/problems/bulk-delete', data),
+  
+  // Match Management
+  getAllMatches: (params) => api.get('/admin/matches', { params }),
+  forceEndMatch: (id) => api.post(`/admin/matches/${id}/force-end`),
+  
+  // Platform Settings
+  updatePlatformSettings: (data) => api.patch('/admin/settings', data),
 };
 
 export const matchesAPI = {

@@ -243,90 +243,166 @@ const MatchPage = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-4">
-      {/* Left Panel - Problem & Scoreboard */}
-      <div className="lg:w-1/3 space-y-4 overflow-y-auto">
-        {/* Timer */}
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-primary-600" />
-              <span className="font-semibold">Time Remaining</span>
-            </div>
-            <span className={`text-2xl font-bold ${timeLeft < 60 ? 'text-red-600' : 'text-primary-600'}`}>
-              {formatTime(timeLeft)}
-            </span>
-          </div>
-        </div>
-
-        {/* Problem */}
-        {loadingProblem ? (
-          <div className="card">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">Generating Problem...</h3>
-                <p className="text-sm text-gray-500">Please wait while we prepare your coding challenge</p>
-              </div>
-            </div>
-          </div>
-        ) : problem ? (
-          <div className="card">
-            <h2 className="text-xl font-bold mb-3">{problem.title}</h2>
-            <span className={`badge badge-${problem.difficulty} mb-3`}>
-              {problem.difficulty}
-            </span>
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap">{problem.description}</p>
-            </div>
-            <div className="mt-4 space-y-2">
-              <div className="p-3 bg-gray-50 rounded">
-                <p className="text-xs font-semibold text-gray-600 mb-1">Sample Input:</p>
-                <code className="text-sm">{problem.sampleInput}</code>
-              </div>
-              <div className="p-3 bg-gray-50 rounded">
-                <p className="text-xs font-semibold text-gray-600 mb-1">Sample Output:</p>
-                <code className="text-sm">{problem.sampleOutput}</code>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Scoreboard */}
-        <div className="card">
-          <h3 className="font-bold mb-3 flex items-center">
-            <Trophy className="h-5 w-5 mr-2 text-yellow-600" />
-            Live Scoreboard
-          </h3>
-          {scoreboard.length === 0 ? (
-            <p className="text-sm text-gray-500">No submissions yet</p>
-          ) : (
-            <div className="space-y-2">
-              {scoreboard.map((player, idx) => (
-                <div key={player.userId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div className="flex items-center space-x-3">
-                    <span className="font-bold text-gray-600">#{idx + 1}</span>
-                    <span className="font-medium">{player.username}</span>
-                  </div>
-                  <span className="font-bold text-primary-600">{player.score}</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-6 p-6">
+        {/* Left Panel - Problem & Scoreboard */}
+        <div className="lg:w-1/3 space-y-6 overflow-y-auto">
+          {/* Timer */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Clock className="h-6 w-6 text-white" />
+                  <span className="font-bold text-white text-lg">Time Remaining</span>
                 </div>
-              ))}
+                <div className="text-right">
+                  <span className={`text-3xl font-bold ${timeLeft < 60 ? 'text-yellow-300' : 'text-white'}`}>
+                    {formatTime(timeLeft)}
+                  </span>
+                  {timeLeft < 60 && (
+                    <p className="text-yellow-200 text-sm">Hurry up!</p>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+            <div className="p-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-1000 ${
+                    timeLeft < 60 ? 'bg-gradient-to-r from-red-500 to-pink-500' : 
+                    timeLeft < 300 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 
+                    'bg-gradient-to-r from-green-500 to-emerald-500'
+                  }`}
+                  style={{ width: `${Math.max(0, (timeLeft / 900) * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
 
-      {/* Right Panel - Code Editor */}
-      <div className="lg:w-2/3">
-        <div className="card h-full p-0">
-          <CodeEditor
-            code={code}
-            onChange={setCode}
-            onSubmit={handleSubmit}
-            language={language}
-            onLanguageChange={handleLanguageChange}
-            disabled={matchStatus !== 'in_progress' || submitting}
-          />
+          {/* Problem */}
+          {loadingProblem ? (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4">
+                <h3 className="text-lg font-bold text-white">Generating Problem...</h3>
+              </div>
+              <div className="p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Preparing Challenge</h3>
+                  <p className="text-sm text-gray-500">Please wait while we prepare your coding challenge</p>
+                </div>
+              </div>
+            </div>
+          ) : problem ? (
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white">{problem.title}</h2>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    problem.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
+                    problem.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {problem.difficulty?.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="prose prose-sm max-w-none mb-6">
+                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{problem.description}</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                    <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                      Sample Input
+                    </p>
+                    <code className="text-sm bg-white p-3 rounded-lg block font-mono text-gray-800">{problem.sampleInput}</code>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+                    <p className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                      Sample Output
+                    </p>
+                    <code className="text-sm bg-white p-3 rounded-lg block font-mono text-gray-800">{problem.sampleOutput}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Scoreboard */}
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4">
+              <h3 className="font-bold text-white text-lg flex items-center">
+                <Trophy className="h-6 w-6 mr-3" />
+                Live Scoreboard
+              </h3>
+            </div>
+            <div className="p-6">
+              {scoreboard.length === 0 ? (
+                <div className="text-center py-8">
+                  <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No submissions yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {scoreboard.map((player, idx) => (
+                    <div key={player.userId} className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${
+                      idx === 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200' :
+                      idx === 1 ? 'bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200' :
+                      idx === 2 ? 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200' :
+                      'bg-gray-50 border border-gray-200'
+                    }`}>
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          idx === 0 ? 'bg-yellow-500 text-white' :
+                          idx === 1 ? 'bg-gray-400 text-white' :
+                          idx === 2 ? 'bg-orange-500 text-white' :
+                          'bg-gray-300 text-gray-700'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-gray-900">{player.username}</span>
+                          {idx < 3 && (
+                            <div className="flex items-center space-x-1">
+                              {idx === 0 && <span className="text-yellow-500">👑</span>}
+                              {idx === 1 && <span className="text-gray-500">🥈</span>}
+                              {idx === 2 && <span className="text-orange-500">🥉</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-lg text-gray-900">{player.score || 0}</span>
+                        <p className="text-xs text-gray-500">points</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Code Editor */}
+        <div className="lg:w-2/3">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
+              <h3 className="font-bold text-white text-lg">Code Editor</h3>
+            </div>
+            <div className="h-full">
+              <CodeEditor
+                code={code}
+                onChange={setCode}
+                onSubmit={handleSubmit}
+                language={language}
+                onLanguageChange={handleLanguageChange}
+                disabled={matchStatus !== 'in_progress' || submitting}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -143,6 +143,104 @@ class User {
     const result = await pool.query(query, [userId, newRating]);
     return result.rows[0];
   }
+
+  /**
+   * Get user statistics with calculated fields
+   */
+  static async getStats(userId) {
+    const query = `
+      SELECT 
+        id, username, display_name, avatar_url, role, rating,
+        total_matches, wins, losses,
+        CASE 
+          WHEN total_matches > 0 THEN ROUND((wins::float / total_matches) * 100, 2)
+          ELSE 0
+        END as win_rate,
+        created_at, updated_at
+      FROM users
+      WHERE id = $1
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result.rows[0];
+  }
+
+  /**
+   * Get all users with stats for admin/leaderboard
+   */
+  static async getAllWithStats({ page = 1, limit = 50, sortBy = 'rating', order = 'desc' } = {}) {
+    const offset = (page - 1) * limit;
+    const validSortFields = ['rating', 'total_matches', 'wins', 'created_at'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'rating';
+    const sortOrder = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    const query = `
+      SELECT 
+        id, username, display_name, avatar_url, role, rating,
+        total_matches, wins, losses,
+        CASE 
+          WHEN total_matches > 0 THEN ROUND((wins::float / total_matches) * 100, 2)
+          ELSE 0
+        END as win_rate,
+        created_at
+      FROM users
+      WHERE role != 'banned'
+      ORDER BY ${sortField} ${sortOrder}
+      LIMIT $1 OFFSET $2
+    `;
+
+    const result = await pool.query(query, [limit, offset]);
+    return result.rows;
+  }
+
+  /**
+   * Get user count for pagination
+   */
+  static async getCount() {
+    const query = 'SELECT COUNT(*) FROM users WHERE role != \'banned\'';
+    const result = await pool.query(query);
+    return parseInt(result.rows[0].count);
+  }
+
+  /**
+   * Delete user (soft delete by changing role to banned)
+   */
+  static async delete(userId) {
+    const query = `
+      UPDATE users
+      SET role = 'banned'
+      WHERE id = $1
+      RETURNING id, username
+    `;
+
+    const result = await pool.query(query, [userId]);
+    return result.rows[0];
+  }
+
+  /**
+   * Get user by role for admin management
+   */
+  static async getByRole(role, { page = 1, limit = 50 } = {}) {
+    const offset = (page - 1) * limit;
+
+    const query = `
+      SELECT 
+        id, username, display_name, email, role, rating,
+        total_matches, wins, losses,
+        CASE 
+          WHEN total_matches > 0 THEN ROUND((wins::float / total_matches) * 100, 2)
+          ELSE 0
+        END as win_rate,
+        created_at
+      FROM users
+      WHERE role = $1
+      ORDER BY rating DESC, total_matches DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const result = await pool.query(query, [role, limit, offset]);
+    return result.rows;
+  }
 }
 
 export default User;

@@ -31,8 +31,20 @@ router.get('/logs', adminController.getSystemLogs);
 
 // User management
 router.get('/users', adminController.getAllUsers);
+router.get('/users/:id', adminController.getUserDetails);
 router.patch('/users/:id', adminUpdateUserValidation, adminController.updateUser);
+router.delete('/users/:id', adminController.deleteUser);
 router.post('/users/:id/ban', adminController.toggleUserBan);
+router.post('/users/:id/reset-stats', adminController.resetUserStats);
+router.patch('/users/bulk-update', adminController.bulkUpdateUsers);
+
+// League management
+router.get('/leagues', adminController.getAllLeagues);
+router.post('/leagues', adminController.createLeague);
+router.patch('/leagues/:id', adminController.updateLeague);
+router.delete('/leagues/:id', adminController.deleteLeague);
+router.post('/leagues/:leagueId/seasons', adminController.createSeason);
+router.patch('/seasons/:id', adminController.updateSeason);
 
 // Problem management
 router.post('/problems/bulk-generate', bulkGenerateValidation, adminController.bulkGenerateProblems);

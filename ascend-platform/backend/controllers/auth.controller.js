@@ -202,34 +202,34 @@ export const verifyToken = (req, res) => {
   });
 };
 
-/**
- * Temporary endpoint to make a user admin (remove after use)
- */
-export const makeAdmin = async (req, res) => {
-  try {
-    const { username, secret } = req.body;
+// /**
+//  * Temporary endpoint to make a user admin (remove after use)
+//  */
+// export const makeAdmin = async (req, res) => {
+//   try {
+//     const { username, secret } = req.body;
     
-    // Simple secret check (change this)
-    if (secret !== 'ascend-admin-2024') {
-      return res.status(401).json({ error: 'Invalid secret' });
-    }
+//     // Simple secret check (change this)
+//     if (secret !== 'ascend-admin-2024') {
+//       return res.status(401).json({ error: 'Invalid secret' });
+//     }
     
-    const result = await pool.query(
-      'UPDATE users SET role = $1 WHERE username = $2 RETURNING id, username, role',
-      ['admin', username]
-    );
+//     const result = await pool.query(
+//       'UPDATE users SET role = $1 WHERE username = $2 RETURNING id, username, role',
+//       ['admin', username]
+//     );
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
     
-    res.json({
-      message: 'User promoted to admin',
-      user: result.rows[0]
-    });
+//     res.json({
+//       message: 'User promoted to admin',
+//       user: result.rows[0]
+//     });
     
-  } catch (error) {
-    console.error('Make admin error:', error);
-    res.status(500).json({ error: 'Failed to promote user' });
-  }
-};
+//   } catch (error) {
+//     console.error('Make admin error:', error);
+//     res.status(500).json({ error: 'Failed to promote user' });
+//   }
+// };
