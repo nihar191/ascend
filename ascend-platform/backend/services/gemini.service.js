@@ -14,10 +14,10 @@ class GeminiService {
   constructor() {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     this.generationConfig = {
-      temperature: 1,
-      topP: 0.95,
+      temperature: 0.7,
+      topP: 0.9,
       topK: 40,
-      maxOutputTokens: 45536,
+      maxOutputTokens: 8192,
     };
   }
 
@@ -65,36 +65,40 @@ class GeminiService {
     const tagsList = tags.length > 0 ? tags.join(', ') : 'any suitable topics';
     const hintText = hint ? `\nTheme/Hint: ${hint}` : '';
 
-    return `Generate a unique competitive programming problem suitable for a coding contest.
+    return `Generate a competitive programming problem. Difficulty: ${difficulty}, Topics: ${tagsList}${hintText}
 
-Requirements:
-- Difficulty: ${difficulty}
-- Topics/Tags: ${tagsList}${hintText}
-- The problem should be original and engaging
-- Include clear input/output specifications
-- Provide comprehensive test cases
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations, no extra text.
 
-Return ONLY a valid JSON object with this exact structure (no markdown, no extra text):
 {
   "title": "Problem Title",
-  "description": "Detailed problem statement with constraints and examples",
+  "description": "Problem statement with constraints. Keep description concise.",
   "difficulty": "${difficulty}",
-  "points": <integer based on difficulty: easy=100, medium=200, hard=300>,
-  "tags": ["tag1", "tag2"],
-  "sampleInput": "Example input as string",
-  "sampleOutput": "Example output as string",
+  "points": ${difficulty === 'easy' ? 100 : difficulty === 'medium' ? 200 : 300},
+  "tags": ["${tags.length > 0 ? tags[0] : 'array'}"],
+  "sampleInput": "5\\n1 2 3 4 5",
+  "sampleOutput": "15",
   "testCases": [
     {
-      "input": {"param1": "value1"},
-      "output": "expected output",
-      "explanation": "why this is the answer"
+      "input": "3\\n1 2 3",
+      "output": "6",
+      "explanation": "Sum of array elements"
+    },
+    {
+      "input": "1\\n42",
+      "output": "42",
+      "explanation": "Single element"
+    },
+    {
+      "input": "0\\n",
+      "output": "0",
+      "explanation": "Empty array"
     }
   ],
-  "timeLimitMs": <reasonable time limit in milliseconds>,
-  "memoryLimitMb": <reasonable memory limit in MB>
+  "timeLimitMs": 2000,
+  "memoryLimitMb": 256
 }
 
-Generate at least 5 diverse test cases covering edge cases, normal cases, and boundary conditions.`;
+Generate exactly 3-5 test cases. Keep all strings simple and avoid special characters.`;
   }
 
   /**
@@ -111,6 +115,9 @@ Generate at least 5 diverse test cases covering edge cases, normal cases, and bo
       } else if (cleanedText.startsWith('```')) {
         cleanedText = cleanedText.replace(/^```\s*/i, '').replace(/```$/, '').trim();
       }
+
+      // Clean up common JSON issues
+      cleanedText = this._cleanJsonString(cleanedText);
 
       const problemData = JSON.parse(cleanedText);
 
@@ -135,8 +142,62 @@ Generate at least 5 diverse test cases covering edge cases, normal cases, and bo
       console.log('Raw AI output length:', responseText.length);
       console.log('Raw AI output preview:', responseText.substring(0, 500));
       console.log('Raw AI output ending:', responseText.substring(Math.max(0, responseText.length - 200)));
+      
+      // Try to extract JSON from the response using regex
+      try {
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const extractedJson = this._cleanJsonString(jsonMatch[0]);
+          const problemData = JSON.parse(extractedJson);
+          
+          // Validate required fields
+          const required = ['title', 'description', 'difficulty', 'testCases'];
+          for (const field of required) {
+            if (!problemData[field]) {
+              throw new Error(`Missing required field: ${field}`);
+            }
+          }
+          
+          // Set defaults
+          problemData.points = problemData.points || this._getPointsByDifficulty(problemData.difficulty);
+          problemData.tags = problemData.tags || [];
+          problemData.timeLimitMs = problemData.timeLimitMs || 2000;
+          problemData.memoryLimitMb = problemData.memoryLimitMb || 256;
+          
+          console.log('Successfully extracted JSON from malformed response');
+          return problemData;
+        }
+      } catch (extractError) {
+        console.error('Failed to extract JSON:', extractError);
+      }
+      
       throw new Error('Invalid response format from AI');
     }
+  }
+
+  /**
+   * Clean JSON string to fix common issues
+   */
+  _cleanJsonString(jsonString) {
+    // Remove control characters except newlines and tabs
+    let cleaned = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    
+    // Fix common JSON issues
+    cleaned = cleaned
+      // Fix unescaped quotes in strings
+      .replace(/"([^"]*)"([^"]*)"([^"]*)":/g, '"$1\\"$2\\"$3":')
+      // Fix trailing commas
+      .replace(/,(\s*[}\]])/g, '$1')
+      // Fix missing commas between properties
+      .replace(/"\s*\n\s*"/g, '",\n"')
+      // Fix single quotes to double quotes
+      .replace(/'/g, '"')
+      // Remove any text before the first {
+      .replace(/^[^{]*/, '')
+      // Remove any text after the last }
+      .replace(/[^}]*$/, '');
+    
+    return cleaned;
   }
 
   /**
