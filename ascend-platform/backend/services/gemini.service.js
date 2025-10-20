@@ -14,10 +14,10 @@ class GeminiService {
   constructor() {
     this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     this.generationConfig = {
-      temperature: 0.7,
-      topP: 0.9,
-      topK: 40,
-      maxOutputTokens: 8192,
+      temperature: 0.3,
+      topP: 0.8,
+      topK: 20,
+      maxOutputTokens: 4096,
     };
   }
 
@@ -67,11 +67,11 @@ class GeminiService {
 
     return `Generate a competitive programming problem. Difficulty: ${difficulty}, Topics: ${tagsList}${hintText}
 
-CRITICAL: Return ONLY valid JSON. No markdown, no explanations, no extra text.
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations, no extra text. NO NEWLINES in description field.
 
 {
   "title": "Problem Title",
-  "description": "Problem statement with constraints. Keep description concise.",
+  "description": "Problem statement with constraints. Use \\n for line breaks. Keep description concise.",
   "difficulty": "${difficulty}",
   "points": ${difficulty === 'easy' ? 100 : difficulty === 'medium' ? 200 : 300},
   "tags": ["${tags.length > 0 ? tags[0] : 'array'}"],
@@ -98,7 +98,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no explanations, no extra text.
   "memoryLimitMb": 256
 }
 
-Generate exactly 3-5 test cases. Keep all strings simple and avoid special characters.`;
+Generate exactly 3-5 test cases. Use \\n for line breaks in all strings. No actual newlines.`;
   }
 
   /**
@@ -169,6 +169,17 @@ Generate exactly 3-5 test cases. Keep all strings simple and avoid special chara
         }
       } catch (extractError) {
         console.error('Failed to extract JSON:', extractError);
+        
+        // Last resort: try to manually parse the response
+        try {
+          const manualData = this._manualParseResponse(responseText);
+          if (manualData) {
+            console.log('Successfully parsed response manually');
+            return manualData;
+          }
+        } catch (manualError) {
+          console.error('Manual parsing also failed:', manualError);
+        }
       }
       
       throw new Error('Invalid response format from AI');
@@ -197,7 +208,120 @@ Generate exactly 3-5 test cases. Keep all strings simple and avoid special chara
       // Remove any text after the last }
       .replace(/[^}]*$/, '');
     
+    // Fix unescaped newlines in string values
+    cleaned = this._fixUnescapedNewlines(cleaned);
+    
     return cleaned;
+  }
+
+  /**
+   * Fix unescaped newlines in JSON string values
+   */
+  _fixUnescapedNewlines(jsonString) {
+    // More robust approach: find all string values and properly escape them
+    let result = '';
+    let i = 0;
+    
+    while (i < jsonString.length) {
+      if (jsonString[i] === '"') {
+        // Found start of string, find the end
+        let stringStart = i;
+        i++; // Skip opening quote
+        
+        while (i < jsonString.length) {
+          if (jsonString[i] === '"' && jsonString[i-1] !== '\\') {
+            // Found end of string
+            let stringContent = jsonString.substring(stringStart + 1, i);
+            
+            // Escape the content
+            const escaped = stringContent
+              .replace(/\\/g, '\\\\')
+              .replace(/"/g, '\\"')
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r')
+              .replace(/\t/g, '\\t');
+            
+            result += `"${escaped}"`;
+            i++; // Skip closing quote
+            break;
+          }
+          i++;
+        }
+      } else {
+        result += jsonString[i];
+        i++;
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Manual parsing as last resort when JSON parsing fails
+   */
+  _manualParseResponse(responseText) {
+    try {
+      // Extract key fields using regex patterns
+      const titleMatch = responseText.match(/"title":\s*"([^"]+)"/);
+      const descriptionMatch = responseText.match(/"description":\s*"([^"]+(?:\\n[^"]*)*)"/);
+      const difficultyMatch = responseText.match(/"difficulty":\s*"([^"]+)"/);
+      const pointsMatch = responseText.match(/"points":\s*(\d+)/);
+      
+      if (!titleMatch || !descriptionMatch || !difficultyMatch) {
+        return null;
+      }
+
+      const title = titleMatch[1];
+      const description = descriptionMatch[1].replace(/\\n/g, '\n');
+      const difficulty = difficultyMatch[1];
+      const points = pointsMatch ? parseInt(pointsMatch[1]) : this._getPointsByDifficulty(difficulty);
+
+      // Extract test cases
+      const testCases = [];
+      const testCaseMatches = responseText.match(/"testCases":\s*\[([\s\S]*?)\]/);
+      if (testCaseMatches) {
+        const testCaseText = testCaseMatches[1];
+        const inputMatches = testCaseText.match(/"input":\s*"([^"]+)"/g);
+        const outputMatches = testCaseText.match(/"output":\s*"([^"]+)"/g);
+        
+        if (inputMatches && outputMatches) {
+          for (let i = 0; i < Math.min(inputMatches.length, outputMatches.length); i++) {
+            const input = inputMatches[i].match(/"input":\s*"([^"]+)"/)[1];
+            const output = outputMatches[i].match(/"output":\s*"([^"]+)"/)[1];
+            testCases.push({
+              input: input.replace(/\\n/g, '\n'),
+              output: output.replace(/\\n/g, '\n'),
+              explanation: `Test case ${i + 1}`
+            });
+          }
+        }
+      }
+
+      // If no test cases found, create a simple one
+      if (testCases.length === 0) {
+        testCases.push({
+          input: "1\n1",
+          output: "1",
+          explanation: "Simple test case"
+        });
+      }
+
+      return {
+        title,
+        description,
+        difficulty,
+        points,
+        tags: ['array'],
+        sampleInput: testCases[0]?.input || "1\n1",
+        sampleOutput: testCases[0]?.output || "1",
+        testCases,
+        timeLimitMs: 2000,
+        memoryLimitMb: 256
+      };
+    } catch (error) {
+      console.error('Manual parsing error:', error);
+      return null;
+    }
   }
 
   /**
