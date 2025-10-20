@@ -1,6 +1,7 @@
 // backend/server.js
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -111,15 +112,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.resolve(__dirname, '../frontend/dist');
 
-app.use(express.static(clientDistPath));
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
 
-// SPA fallback: send index.html for non-API routes to support client-side routing
-app.get('*', (req, res, next) => {
-  const isApi = req.path.startsWith('/api');
-  const isSocket = req.path.startsWith('/socket.io');
-  if (isApi || isSocket) return next();
-  return res.sendFile(path.join(clientDistPath, 'index.html'));
-});
+  // SPA fallback: send index.html for non-API routes to support client-side routing
+  app.get('*', (req, res, next) => {
+    const isApi = req.path.startsWith('/api');
+    const isSocket = req.path.startsWith('/socket.io');
+    if (isApi || isSocket) return next();
+    return res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+} else {
+  console.warn(`Frontend dist not found at ${clientDistPath}. Skipping static serving.`);
+}
 
 // Routes will be added in next steps
 app.get('/api', (req, res) => {
