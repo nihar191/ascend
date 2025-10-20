@@ -691,6 +691,8 @@ const AdminDashboardPage = () => {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
