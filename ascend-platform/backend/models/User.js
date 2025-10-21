@@ -203,13 +203,13 @@ class User {
   }
 
   /**
-   * Delete user (soft delete by changing role to banned)
+   * Delete user (soft delete by setting is_active to false)
    */
   static async delete(userId) {
     const query = `
       UPDATE users
-      SET role = 'banned'
-      WHERE id = $1
+      SET is_active = false, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND is_active = true
       RETURNING id, username
     `;
 

@@ -580,7 +580,7 @@ const AdminDashboardPage = () => {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="space-y-6">
+          <div className="p-4 lg:p-6 space-y-6">
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">

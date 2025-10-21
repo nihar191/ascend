@@ -25,7 +25,7 @@ export const authenticate = async (req, res, next) => {
 
     // Fetch user from database to ensure still exists and active
     const result = await pool.query(
-      'SELECT id, username, email, display_name, role, rating FROM users WHERE id = $1',
+      'SELECT id, username, email, display_name, role, rating FROM users WHERE id = $1 AND is_active = true',
       [decoded.userId]
     );
 
@@ -86,7 +86,7 @@ export const optionalAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, authConfig.jwtSecret);
 
     const result = await pool.query(
-      'SELECT id, username, email, display_name, role, rating FROM users WHERE id = $1',
+      'SELECT id, username, email, display_name, role, rating FROM users WHERE id = $1 AND is_active = true',
       [decoded.userId]
     );
 

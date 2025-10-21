@@ -88,14 +88,14 @@ export const getAllUsers = async (req, res) => {
     const query = `
       SELECT 
         id, username, email, display_name, avatar_url, role, rating,
-        total_matches, wins, losses,
+        total_matches, wins, losses, is_active,
         CASE 
           WHEN total_matches > 0 THEN ROUND((wins::float / total_matches) * 100, 2)
           ELSE 0
         END as win_rate,
         created_at
       FROM users
-      ${whereClause}
+      WHERE is_active = true ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}
       ORDER BY ${sortField} ${sortOrder}
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
@@ -105,7 +105,7 @@ export const getAllUsers = async (req, res) => {
     const users = await pool.query(query, queryParams);
 
     // Get total count
-    const countQuery = `SELECT COUNT(*) FROM users ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) FROM users WHERE is_active = true ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}`;
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount - 1));
 
     res.json({
@@ -194,14 +194,14 @@ export const toggleUserBan = async (req, res) => {
     const { id } = req.params;
     const { banned, reason } = req.body;
 
-    // For now, we'll use a simple flag. In production, add a bans table
     const query = `
       UPDATE users
       SET role = CASE 
         WHEN $2 = true THEN 'banned'
         ELSE 'user'
-      END
-      WHERE id = $1
+      END,
+      updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND is_active = true
       RETURNING id, username, role
     `;
 
