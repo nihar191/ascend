@@ -813,6 +813,216 @@ export const updateSeason = async (req, res) => {
 };
 
 /**
+ * Get all problems with admin details
+ */
+export const getAllProblems = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, difficulty, isActive } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    let whereConditions = [];
+    let queryParams = [];
+    let paramCount = 1;
+
+    if (difficulty) {
+      whereConditions.push(`difficulty = $${paramCount}`);
+      queryParams.push(difficulty);
+      paramCount++;
+    }
+
+    if (isActive !== undefined) {
+      whereConditions.push(`is_active = $${paramCount}`);
+      queryParams.push(isActive === 'true');
+      paramCount++;
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+    const query = `
+      SELECT 
+        p.*,
+        u.username as author_name,
+        COUNT(s.id) as submission_count
+      FROM problems p
+      LEFT JOIN users u ON u.id = p.author_id
+      LEFT JOIN submissions s ON s.problem_id = p.id
+      ${whereClause}
+      GROUP BY p.id, u.username
+      ORDER BY p.created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `;
+
+    queryParams.push(parseInt(limit), offset);
+
+    const problems = await pool.query(query, queryParams);
+
+    const countQuery = `SELECT COUNT(*) FROM problems p ${whereClause}`;
+    const countParams = queryParams.slice(0, paramCount - 1);
+    const countResult = await pool.query(countQuery, countParams);
+
+    res.json({
+      problems: problems.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(countResult.rows[0].count),
+        totalPages: Math.ceil(countResult.rows[0].count / parseInt(limit)),
+      },
+    });
+
+  } catch (error) {
+    console.error('Get all problems error:', error);
+    res.status(500).json({ error: 'Failed to fetch problems' });
+  }
+};
+
+/**
+ * Get problem details for admin
+ */
+export const getProblemDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const problem = await Problem.findById(id);
+
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    // Get problem statistics
+    const stats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_submissions,
+        COUNT(CASE WHEN status = 'accepted' THEN 1 END) as accepted_submissions,
+        COUNT(CASE WHEN status = 'wrong_answer' THEN 1 END) as wrong_answers,
+        COUNT(CASE WHEN status = 'time_limit_exceeded' THEN 1 END) as time_limit_exceeded,
+        COUNT(CASE WHEN status = 'runtime_error' THEN 1 END) as runtime_errors
+      FROM submissions 
+      WHERE problem_id = $1
+    `, [id]);
+
+    res.json({
+      problem,
+      statistics: stats.rows[0],
+    });
+
+  } catch (error) {
+    console.error('Get problem details error:', error);
+    res.status(500).json({ error: 'Failed to fetch problem details' });
+  }
+};
+
+/**
+ * Create a new problem
+ */
+export const createProblem = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      difficulty,
+      points,
+      timeLimitMs,
+      memoryLimitMb,
+      tags,
+      sampleInput,
+      sampleOutput,
+      testCases
+    } = req.body;
+
+    if (!title || !description || !difficulty) {
+      return res.status(400).json({ error: 'Title, description, and difficulty are required' });
+    }
+
+    // Generate slug
+    let slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+
+    let counter = 1;
+    while (await Problem.slugExists(slug)) {
+      slug = `${slug}-${counter}`;
+      counter++;
+    }
+
+    const problem = await Problem.create({
+      title,
+      slug,
+      description,
+      difficulty,
+      points: points || 100,
+      timeLimitMs: timeLimitMs || 2000,
+      memoryLimitMb: memoryLimitMb || 256,
+      tags: Array.isArray(tags) ? tags : [],
+      sampleInput: sampleInput || '',
+      sampleOutput: sampleOutput || '',
+      testCases: Array.isArray(testCases) ? testCases : [],
+      authorId: req.user.id,
+      isAiGenerated: false,
+    });
+
+    res.status(201).json({
+      message: 'Problem created successfully',
+      problem,
+    });
+
+  } catch (error) {
+    console.error('Create problem error:', error);
+    res.status(500).json({ error: 'Failed to create problem' });
+  }
+};
+
+/**
+ * Update a problem
+ */
+export const updateProblem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const problem = await Problem.update(id, updates);
+
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    res.json({
+      message: 'Problem updated successfully',
+      problem,
+    });
+
+  } catch (error) {
+    console.error('Update problem error:', error);
+    res.status(500).json({ error: 'Failed to update problem' });
+  }
+};
+
+/**
+ * Delete a problem (soft delete)
+ */
+export const deleteProblem = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await Problem.delete(id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    res.json({
+      message: 'Problem deleted successfully',
+      problem: result,
+    });
+
+  } catch (error) {
+    console.error('Delete problem error:', error);
+    res.status(500).json({ error: 'Failed to delete problem' });
+  }
+};
+
+/**
  * Get all leagues with admin details
  */
 export const getAllLeagues = async (req, res) => {

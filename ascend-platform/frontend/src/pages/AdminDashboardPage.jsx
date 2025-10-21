@@ -1,6 +1,7 @@
 // frontend/src/pages/AdminDashboardPage.jsx
 import { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
+import toast from 'react-hot-toast';
 import { 
   Users, 
   Trophy, 
@@ -128,15 +129,19 @@ const AdminDashboardPage = () => {
       switch (action) {
         case 'ban':
           await adminAPI.banUser(userId, { banned: true, reason: 'Admin action' });
+          toast.success('User banned successfully');
           break;
         case 'unban':
           await adminAPI.banUser(userId, { banned: false });
+          toast.success('User unbanned successfully');
           break;
         case 'reset':
           await adminAPI.resetUserStats(userId);
+          toast.success('User stats reset successfully');
           break;
         case 'delete':
           await adminAPI.deleteUser(userId);
+          toast.success('User deleted successfully');
           break;
         default:
           break;
@@ -144,6 +149,7 @@ const AdminDashboardPage = () => {
       fetchUsers();
     } catch (error) {
       console.error(`Failed to ${action} user:`, error);
+      toast.error(`Failed to ${action} user`);
     }
   };
 
@@ -157,12 +163,14 @@ const AdminDashboardPage = () => {
             userIds: selectedUsers,
             updates: { role: 'banned' }
           });
+          toast.success(`${selectedUsers.length} users banned successfully`);
           break;
         case 'unban':
           await adminAPI.bulkUpdateUsers({
             userIds: selectedUsers,
             updates: { role: 'user' }
           });
+          toast.success(`${selectedUsers.length} users unbanned successfully`);
           break;
         default:
           break;
@@ -171,6 +179,7 @@ const AdminDashboardPage = () => {
       fetchUsers();
     } catch (error) {
       console.error(`Failed to bulk ${action} users:`, error);
+      toast.error(`Failed to bulk ${action} users`);
     }
   };
 
@@ -195,11 +204,13 @@ const AdminDashboardPage = () => {
     e.preventDefault();
     try {
       await adminAPI.createLeague(leagueForm);
+      toast.success('League created successfully');
       setLeagueForm({ name: '', description: '', maxParticipants: 1000, isPublic: true });
       setShowCreateLeague(false);
       fetchLeagues();
     } catch (error) {
       console.error('Failed to create league:', error);
+      toast.error('Failed to create league');
     }
   };
 
@@ -218,11 +229,13 @@ const AdminDashboardPage = () => {
     e.preventDefault();
     try {
       await adminAPI.updateLeague(editingLeague.id, leagueForm);
+      toast.success('League updated successfully');
       setShowEditLeague(false);
       setEditingLeague(null);
       fetchLeagues();
     } catch (error) {
       console.error('Failed to update league:', error);
+      toast.error('Failed to update league');
     }
   };
 
@@ -230,9 +243,11 @@ const AdminDashboardPage = () => {
     if (window.confirm('Are you sure you want to delete this league?')) {
       try {
         await adminAPI.deleteLeague(leagueId);
+        toast.success('League deleted successfully');
         fetchLeagues();
       } catch (error) {
         console.error('Failed to delete league:', error);
+        toast.error('Failed to delete league');
       }
     }
   };
@@ -240,17 +255,33 @@ const AdminDashboardPage = () => {
   // Problem CRUD operations
   const fetchProblems = async () => {
     try {
-      const response = await adminAPI.getAllProblems?.() || { data: { problems: [] } };
+      const response = await adminAPI.getAllProblems();
       setProblems(response.data.problems || []);
     } catch (error) {
       console.error('Failed to fetch problems:', error);
+      toast.error('Failed to fetch problems');
     }
   };
 
   const handleCreateProblem = async (e) => {
     e.preventDefault();
     try {
-      await adminAPI.createProblem?.(problemForm);
+      const tags = problemForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      
+      await adminAPI.createProblem({
+        title: problemForm.title,
+        description: problemForm.description,
+        difficulty: problemForm.difficulty,
+        points: parseInt(problemForm.points),
+        timeLimitMs: parseInt(problemForm.timeLimitMs),
+        memoryLimitMb: parseInt(problemForm.memoryLimitMb),
+        tags,
+        sampleInput: problemForm.sampleInput,
+        sampleOutput: problemForm.sampleOutput,
+        testCases: []
+      });
+      
+      toast.success('Problem created successfully');
       setProblemForm({
         title: '',
         description: '',
@@ -258,7 +289,7 @@ const AdminDashboardPage = () => {
         points: 100,
         timeLimitMs: 2000,
         memoryLimitMb: 256,
-        tags: [],
+        tags: '',
         sampleInput: '',
         sampleOutput: '',
         testCases: []
@@ -267,15 +298,18 @@ const AdminDashboardPage = () => {
       fetchProblems();
     } catch (error) {
       console.error('Failed to create problem:', error);
+      toast.error('Failed to create problem');
     }
   };
 
   const handleBulkGenerateProblems = async () => {
     try {
       await adminAPI.bulkGenerateProblems({ count: 5, difficulty: 'medium' });
+      toast.success('Problems generated successfully');
       fetchProblems();
     } catch (error) {
       console.error('Failed to generate problems:', error);
+      toast.error('Failed to generate problems');
     }
   };
 
@@ -398,22 +432,22 @@ const AdminDashboardPage = () => {
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
 
             {/* Tabs */}
-            <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-6 py-4 border-b border-gray-200">
-              <nav className="flex space-x-1">
+            <div className="bg-gradient-to-r from-gray-50 to-blue-50 px-4 lg:px-6 py-3 lg:py-4 border-b border-gray-200">
+              <nav className="flex flex-wrap gap-2 lg:gap-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200 transform hover:scale-105 ${
+                      className={`flex items-center py-2 lg:py-3 px-3 lg:px-6 rounded-xl font-semibold text-xs lg:text-sm transition-all duration-200 transform hover:scale-105 ${
                         activeTab === tab.id
                           ? 'bg-white text-indigo-600 shadow-lg border border-indigo-200'
                           : 'text-gray-600 hover:text-indigo-600 hover:bg-white/50'
                       }`}
                     >
-                      <Icon className="h-5 w-5 mr-3" />
-                      {tab.label}
+                      <Icon className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3" />
+                      <span className="hidden sm:inline">{tab.label}</span>
                     </button>
                   );
                 })}
@@ -422,7 +456,7 @@ const AdminDashboardPage = () => {
 
             {/* Dashboard Tab */}
             {activeTab === 'dashboard' && stats && (
-              <div className="p-6 space-y-8">
+              <div className="p-4 lg:p-6 space-y-6 lg:space-y-8">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border border-blue-200 hover:shadow-lg transition-all duration-300 transform hover:scale-105">

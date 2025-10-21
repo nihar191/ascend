@@ -75,6 +75,11 @@ export const adminAPI = {
   updateSeason: (id, data) => api.patch(`/admin/seasons/${id}`, data),
   
   // Problem Management
+  getAllProblems: (params) => api.get('/admin/problems', { params }),
+  getProblemDetails: (id) => api.get(`/admin/problems/${id}`),
+  createProblem: (data) => api.post('/admin/problems', data),
+  updateProblem: (id, data) => api.patch(`/admin/problems/${id}`, data),
+  deleteProblem: (id) => api.delete(`/admin/problems/${id}`),
   bulkGenerateProblems: (data) => api.post('/admin/problems/bulk-generate', data),
   bulkUpdateProblems: (data) => api.patch('/admin/problems/bulk-update', data),
   bulkDeleteProblems: (data) => api.delete('/admin/problems/bulk-delete', data),

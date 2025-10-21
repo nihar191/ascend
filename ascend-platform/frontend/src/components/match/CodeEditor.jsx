@@ -39,24 +39,26 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-3 bg-gray-100 border-b">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-gray-100 border-b gap-3">
+        <div className="flex items-center space-x-3">
+          <label className="text-sm font-medium text-gray-700 hidden sm:block">Language:</label>
           <select
             value={language}
             onChange={handleLanguageChange}
             disabled={disabled}
-            className="px-3 py-1 border rounded text-sm bg-white"
+            className="px-3 py-2 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="java">Java</option>
             <option value="cpp">C++</option>
+            <option value="c">C</option>
           </select>
         </div>
         <button
           onClick={onSubmit}
           disabled={disabled}
-          className="btn-primary text-sm flex items-center"
+          className="btn-primary text-sm flex items-center w-full sm:w-auto justify-center"
         >
           <Play className="h-4 w-4 mr-1" />
           Submit
@@ -84,12 +86,20 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
             theme="vs-dark"
             options={{
               minimap: { enabled: false },
-              fontSize: 14,
+              fontSize: window.innerWidth < 768 ? 12 : 14,
               lineNumbers: 'on',
               scrollBeyondLastLine: false,
               automaticLayout: true,
               tabSize: 2,
               readOnly: disabled,
+              wordWrap: 'on',
+              wrappingIndent: 'indent',
+              scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto',
+                verticalScrollbarSize: 8,
+                horizontalScrollbarSize: 8,
+              },
             }}
             onMount={handleEditorDidMount}
             onError={handleEditorError}

@@ -47,11 +47,15 @@ router.post('/leagues/:leagueId/seasons', adminController.createSeason);
 router.patch('/seasons/:id', adminController.updateSeason);
 
 // Problem management
+router.get('/problems', adminController.getAllProblems);
+router.get('/problems/:id', adminController.getProblemDetails);
+router.post('/problems', adminController.createProblem);
+router.patch('/problems/:id', adminController.updateProblem);
+router.delete('/problems/:id', adminController.deleteProblem);
 router.post('/problems/bulk-generate', bulkGenerateValidation, adminController.bulkGenerateProblems);
 router.patch('/problems/bulk-update', bulkOperationValidation, adminController.bulkUpdateProblems);
 router.delete('/problems/bulk-delete', bulkOperationValidation, adminController.bulkDeleteProblems);
-
-// Match management
+ // Match management
 router.get('/matches', adminController.getAllMatches);
 router.post('/matches/:id/force-end', adminController.forceEndMatch);
 
