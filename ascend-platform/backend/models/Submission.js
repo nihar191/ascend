@@ -6,9 +6,22 @@ import pool from '../config/database.js';
  */
 class Submission {
   /**
-   * Create a new submission
+   * Create a new submission (for individual problems)
    */
-  static async create({ matchId, userId, problemId, code, language }) {
+  static async create({ userId, problemId, code, language, status = 'pending', score = 0 }) {
+    const query = `
+      INSERT INTO submissions (user_id, problem_id, code, language, status, score)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [userId, problemId, code, language, status, score]);
+    return result.rows[0];
+  }
+
+  /**
+   * Create a new submission (for matches)
+   */
+  static async createMatchSubmission({ matchId, userId, problemId, code, language }) {
     const query = `
       INSERT INTO submissions (match_id, user_id, problem_id, code, language, status)
       VALUES ($1, $2, $3, $4, $5, 'pending')

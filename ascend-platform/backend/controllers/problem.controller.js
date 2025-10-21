@@ -1,5 +1,6 @@
 // backend/controllers/problem.controller.js
 import Problem from '../models/Problem.js';
+import Submission from '../models/Submission.js';
 import geminiService from '../services/gemini.service.js';
 
 /**
@@ -310,8 +311,15 @@ export const submitSolution = async (req, res) => {
       submitted_at: new Date(),
     };
 
-    // In production, save to database
-    // await Submission.create(submission);
+    // Save to database
+    await Submission.create({
+      userId: req.user.id,
+      problemId: id,
+      code,
+      language,
+      status: isValidSolution ? 'accepted' : 'wrong_answer',
+      score: isValidSolution ? problem.points : 0
+    });
 
     res.json({
       status: submission.status,

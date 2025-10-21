@@ -180,7 +180,7 @@ export const handleMatchEvents = (io) => {
 
         // Create submission
         console.log(`🔄 Creating submission in database...`);
-        const submission = await Submission.create({
+        const submission = await Submission.createMatchSubmission({
           matchId,
           userId,
           problemId: match.problem_id,
