@@ -109,7 +109,7 @@ export const getAllUsers = async (req, res) => {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) FROM users ${whereClause}`;
-    const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount - 1));
+    const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
 
     res.json({
       users: users.rows,

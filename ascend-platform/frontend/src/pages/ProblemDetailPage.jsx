@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { problemsAPI } from '../services/api';
 import { ArrowLeft, Code2, Clock, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CodeEditor from '../components/match/CodeEditor';
 
 const ProblemDetailPage = () => {
   const { id } = useParams();
@@ -38,6 +39,10 @@ const ProblemDetailPage = () => {
       return;
     }
 
+    if (submitting) {
+      return; // Prevent multiple submissions
+    }
+
     setSubmitting(true);
     try {
       const response = await problemsAPI.submit(id, {
@@ -45,14 +50,19 @@ const ProblemDetailPage = () => {
         language
       });
       
+      // Clear any existing toasts first
+      toast.dismiss();
+      
       if (response.data.status === 'accepted') {
-        toast.success('Solution accepted! 🎉');
+        toast.success('Solution accepted! 🎉', { duration: 4000 });
       } else {
-        toast.error(`Solution failed: ${response.data.error || 'Wrong answer'}`);
+        const errorMessage = response.data.message || 'Wrong answer';
+        toast.error(`Solution failed: ${errorMessage}`, { duration: 4000 });
       }
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error('Failed to submit solution');
+      toast.dismiss();
+      toast.error('Failed to submit solution', { duration: 4000 });
     } finally {
       setSubmitting(false);
     }
@@ -91,26 +101,26 @@ const ProblemDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+        <div className="space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
             <button
               onClick={() => navigate('/problems')}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors text-sm sm:text-base"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
+              <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
               Back to Problems
             </button>
-            <div className="flex items-center space-x-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getDifficultyColor(problem.difficulty)}`}>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-semibold ${getDifficultyColor(problem.difficulty)}`}>
                 {problem.difficulty}
               </span>
-              <span className="text-sm text-gray-600">{problem.points} points</span>
+              <span className="text-xs sm:text-sm text-gray-600">{problem.points} points</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Problem Description */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
@@ -189,44 +199,18 @@ const ProblemDetailPage = () => {
             {/* Code Editor */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-4">
-                  <h3 className="text-lg font-bold text-white">Code Editor</h3>
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-3 lg:px-6 py-3 lg:py-4">
+                  <h3 className="text-sm lg:text-lg font-bold text-white">Code Editor</h3>
                 </div>
-                <div className="p-4 space-y-4">
-                  {/* Language Selector */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <label className="text-sm font-medium text-gray-700">Language:</label>
-                      <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white text-sm"
-                      >
-                        <option value="javascript">JavaScript</option>
-                        <option value="python">Python</option>
-                        <option value="java">Java</option>
-                        <option value="cpp">C++</option>
-                        <option value="c">C</option>
-                      </select>
-                    </div>
-                    <button
-                      onClick={handleSubmit}
-                      disabled={submitting}
-                      className="btn-primary text-sm disabled:opacity-50"
-                    >
-                      {submitting ? 'Submitting...' : 'Submit'}
-                    </button>
-                  </div>
-
-                  {/* Code Editor */}
-                  <div className="border border-gray-300 rounded-lg overflow-hidden">
-                    <textarea
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      className="w-full h-96 p-4 font-mono text-sm resize-none focus:outline-none bg-gray-50"
-                      placeholder="Write your solution here..."
-                    />
-                  </div>
+                <div className="h-96 lg:h-[500px]">
+                  <CodeEditor
+                    code={code}
+                    onChange={setCode}
+                    onSubmit={handleSubmit}
+                    language={language}
+                    onLanguageChange={setLanguage}
+                    disabled={submitting}
+                  />
                 </div>
               </div>
             </div>
