@@ -26,6 +26,9 @@ router.get('/', problemController.getAllProblems);
 router.get('/random', problemController.getRandomProblem);
 router.get('/:identifier', problemController.getProblem);
 
+// Submission route (requires authentication)
+router.post('/:id/submit', authenticate, problemController.submitSolution);
+
 // Admin-only routes
 router.post(
   '/',

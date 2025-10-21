@@ -93,6 +93,7 @@ const AdminDashboardPage = () => {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users with params:', { page: currentPage, limit: 20, search: searchTerm, sortBy, order: sortOrder });
       const response = await adminAPI.getAllUsers({
         page: currentPage,
         limit: 20,
@@ -100,9 +101,11 @@ const AdminDashboardPage = () => {
         sortBy,
         order: sortOrder
       });
-      setUsers(response.data.users);
+      console.log('Users response:', response.data);
+      setUsers(response.data.users || []);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      toast.error('Failed to fetch users');
     }
   };
 
@@ -648,7 +651,13 @@ const AdminDashboardPage = () => {
 
             {/* Users Table */}
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              {users.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No users found</p>
+                  <p className="text-sm text-gray-400 mt-2">Try adjusting your search or filters</p>
+                </div>
+              ) : (
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left">
@@ -754,6 +763,7 @@ const AdminDashboardPage = () => {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
 
             {/* Pagination */}

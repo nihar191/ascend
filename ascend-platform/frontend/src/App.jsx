@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ProblemsPage from './pages/ProblemsPage';
+import ProblemDetailPage from './pages/ProblemDetailPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import MatchPage from './pages/MatchPage';
 import ProfilePage from './pages/ProfilePage';
@@ -34,6 +35,7 @@ function App() {
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/problems" element={<ProblemsPage />} />
+            <Route path="/problems/:id" element={<ProblemDetailPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/match/:id" element={<MatchPage />} />
             <Route path="/profile" element={<ProfilePage />} />

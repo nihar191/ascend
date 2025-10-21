@@ -276,3 +276,63 @@ export const getRandomProblem = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch random problem' });
   }
 };
+
+/**
+ * Submit solution for a problem
+ */
+export const submitSolution = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { code, language = 'javascript' } = req.body;
+
+    if (!code || !code.trim()) {
+      return res.status(400).json({ error: 'Code is required' });
+    }
+
+    // Get the problem
+    const problem = await Problem.findById(id);
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+
+    // For now, we'll do a simple validation
+    // In production, you'd want to run the code against test cases
+    const isValidSolution = validateSolution(code, problem);
+
+    // Create submission record
+    const submission = {
+      user_id: req.user.id,
+      problem_id: id,
+      code,
+      language,
+      status: isValidSolution ? 'accepted' : 'wrong_answer',
+      score: isValidSolution ? problem.points : 0,
+      submitted_at: new Date(),
+    };
+
+    // In production, save to database
+    // await Submission.create(submission);
+
+    res.json({
+      status: submission.status,
+      score: submission.score,
+      message: isValidSolution ? 'Solution accepted!' : 'Solution incorrect. Try again.',
+    });
+
+  } catch (error) {
+    console.error('Submit solution error:', error);
+    res.status(500).json({ error: 'Failed to submit solution' });
+  }
+};
+
+/**
+ * Simple solution validation (placeholder)
+ * In production, this would run the code against test cases
+ */
+const validateSolution = (code, problem) => {
+  // This is a very basic validation
+  // In production, you'd run the code against the problem's test cases
+  
+  // For demo purposes, accept any non-empty code
+  return code.trim().length > 10;
+};

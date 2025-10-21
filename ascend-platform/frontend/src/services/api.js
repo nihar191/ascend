@@ -38,8 +38,10 @@ export const authAPI = {
 
 export const problemsAPI = {
   getAll: (params) => api.get('/problems', { params }),
+  getById: (id) => api.get(`/problems/${id}`),
   getOne: (id) => api.get(`/problems/${id}`),
   getRandom: (difficulty) => api.get('/problems/random', { params: { difficulty } }),
+  submit: (id, data) => api.post(`/problems/${id}/submit`, data),
 };
 
 export const leaguesAPI = {
