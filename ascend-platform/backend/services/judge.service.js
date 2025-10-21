@@ -12,30 +12,191 @@ dotenv.config();
  */
 
 class JudgeService {
+    constructor() {
+        this.judge0Url = process.env.JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com';
+        this.rapidApiKey = process.env.RAPIDAPI_KEY;
+        this.useJudge0 = process.env.USE_JUDGE0 === 'true' && this.rapidApiKey;
+        
+        console.log(`🔧 Judge Service initialized:`);
+        console.log(`   - Judge0 URL: ${this.judge0Url}`);
+        console.log(`   - Use Judge0: ${this.useJudge0}`);
+        console.log(`   - RapidAPI Key: ${this.rapidApiKey ? 'Set' : 'Not set'}`);
+    }
+
     /**
-     * Mock code execution
+     * Execute code using Judge0 or fallback to mock
      * @param {Object} submission - Submission details
      * @returns {Object} Execution results
      */
     async executeCode(submission) {
-      const { code, language, problemId, testCases } = submission;
-  
-      console.log(`🔍 Mock judging submission (${language})`);
-      console.log(`🔍 Problem ID: ${problemId}`);
-      console.log(`🔍 Test cases count: ${testCases ? testCases.length : 'undefined'}`);
-      console.log(`🔍 Code length: ${code.length}`);
-  
-      // Simulate processing time
-      console.log(`⏳ Simulating processing delay...`);
-      await this._simulateDelay(1000, 3000);
-      console.log(`✅ Processing delay complete`);
-  
-      // Mock execution results based on code patterns
-      console.log(`🔄 Running mock execution...`);
-      const results = this._mockExecution(code, testCases);
-      console.log(`✅ Mock execution complete:`, results);
-  
-      return results;
+        const { code, language, problemId, testCases } = submission;
+
+        console.log(`🔍 Judging submission (${language})`);
+        console.log(`🔍 Problem ID: ${problemId}`);
+        console.log(`🔍 Test cases count: ${testCases ? testCases.length : 'undefined'}`);
+        console.log(`🔍 Code length: ${code.length}`);
+
+        if (this.useJudge0) {
+            try {
+                console.log(`🚀 Using Judge0 for real execution...`);
+                return await this._executeWithJudge0(code, language, testCases);
+            } catch (error) {
+                console.error(`❌ Judge0 execution failed:`, error.message);
+                console.log(`🔄 Falling back to mock execution...`);
+                return this._mockExecution(code, testCases);
+            }
+        } else {
+            console.log(`🔄 Using mock execution (Judge0 disabled)...`);
+            await this._simulateDelay(1000, 3000);
+            return this._mockExecution(code, testCases);
+        }
+    }
+
+    /**
+     * Execute code using Judge0 API
+     */
+    async _executeWithJudge0(code, language, testCases) {
+        const languageId = this._getLanguageId(language);
+        
+        if (!languageId) {
+            throw new Error(`Unsupported language: ${language}`);
+        }
+
+        const results = [];
+        let passedTests = 0;
+        let totalExecutionTime = 0;
+
+        // Execute each test case
+        for (let i = 0; i < testCases.length; i++) {
+            const testCase = testCases[i];
+            console.log(`🧪 Executing test case ${i + 1}/${testCases.length}`);
+
+            try {
+                const result = await this._submitToJudge0(code, languageId, testCase.input);
+                const actualOutput = result.stdout ? result.stdout.trim() : '';
+                const expectedOutput = testCase.output.trim();
+                const passed = actualOutput === expectedOutput;
+
+                results.push({
+                    testCase: i + 1,
+                    passed,
+                    input: testCase.input,
+                    expectedOutput,
+                    actualOutput,
+                    executionTime: result.time || 0,
+                    memory: result.memory || 0,
+                    status: result.status?.description || 'Unknown'
+                });
+
+                if (passed) passedTests++;
+                totalExecutionTime += result.time || 0;
+
+                console.log(`   ${passed ? '✅' : '❌'} Test ${i + 1}: ${passed ? 'PASSED' : 'FAILED'}`);
+                if (!passed) {
+                    console.log(`   Expected: "${expectedOutput}"`);
+                    console.log(`   Actual: "${actualOutput}"`);
+                }
+            } catch (error) {
+                console.error(`❌ Test case ${i + 1} failed:`, error.message);
+                results.push({
+                    testCase: i + 1,
+                    passed: false,
+                    input: testCase.input,
+                    expectedOutput: testCase.output,
+                    actualOutput: '',
+                    executionTime: 0,
+                    memory: 0,
+                    status: 'Runtime Error',
+                    error: error.message
+                });
+            }
+        }
+
+        const allPassed = passedTests === testCases.length;
+        const status = allPassed ? 'accepted' : 'wrong_answer';
+
+        return {
+            status,
+            testResults: results,
+            passedTests,
+            totalTests: testCases.length,
+            executionTimeMs: Math.round(totalExecutionTime * 1000),
+            memoryUsedKb: Math.round(results.reduce((sum, r) => sum + r.memory, 0) / testCases.length),
+            score: Math.round((passedTests / testCases.length) * 100)
+        };
+    }
+
+    /**
+     * Submit code to Judge0 API
+     */
+    async _submitToJudge0(code, languageId, input) {
+        const submissionData = {
+            language_id: languageId,
+            source_code: Buffer.from(code).toString('base64'),
+            stdin: Buffer.from(input || '').toString('base64')
+        };
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-RapidAPI-Key': this.rapidApiKey,
+            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+        };
+
+        // Submit code
+        const submitResponse = await axios.post(
+            `${this.judge0Url}/submissions`,
+            submissionData,
+            { headers }
+        );
+
+        const token = submitResponse.data.token;
+        console.log(`📤 Submission token: ${token}`);
+
+        // Poll for results
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const resultResponse = await axios.get(
+                `${this.judge0Url}/submissions/${token}`,
+                { headers }
+            );
+
+            const result = resultResponse.data;
+            
+            if (result.status.id <= 2) { // In Queue or Processing
+                attempts++;
+                console.log(`⏳ Processing... (${attempts}/${maxAttempts})`);
+                continue;
+            }
+
+            // Execution completed
+            return {
+                stdout: result.stdout ? Buffer.from(result.stdout, 'base64').toString() : '',
+                stderr: result.stderr ? Buffer.from(result.stderr, 'base64').toString() : '',
+                time: parseFloat(result.time) || 0,
+                memory: parseInt(result.memory) || 0,
+                status: result.status
+            };
+        }
+
+        throw new Error('Execution timeout');
+    }
+
+    /**
+     * Get Judge0 language ID
+     */
+    _getLanguageId(language) {
+        const languageMap = {
+            'javascript': 63,  // Node.js
+            'python': 71,      // Python 3
+            'java': 62,        // Java
+            'cpp': 54,         // C++ 17
+            'c': 50            // C
+        };
+        return languageMap[language];
     }
   
     /**

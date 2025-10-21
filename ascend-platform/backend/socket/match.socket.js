@@ -409,6 +409,14 @@ export const handleMatchEvents = (io) => {
           winner: finalScoreboard[0], // First place is winner
         });
         
+        // Update user statistics after match completion
+        try {
+          console.log(`📊 Updating user stats for match ${match.id}...`);
+          await rankingService.updateUserStatsAfterMatch(match.id);
+        } catch (error) {
+          console.error(`❌ Failed to update user stats for match ${match.id}:`, error);
+        }
+        
         console.log(`✅ Match ${match.id} completed successfully with winner: ${finalScoreboard[0]?.username || 'Unknown'}`);
       }
 
@@ -524,6 +532,14 @@ export const handleMatchEvents = (io) => {
         finalScoreboard,
         participants: match.participants,
       });
+
+      // Update user statistics after match completion
+      try {
+        console.log(`📊 Updating user stats for force-ended match ${matchId}...`);
+        await rankingService.updateUserStatsAfterMatch(matchId);
+      } catch (error) {
+        console.error(`❌ Failed to update user stats for match ${matchId}:`, error);
+      }
 
       // Cleanup timer
       if (io.matchTimers && io.matchTimers.has(matchId)) {

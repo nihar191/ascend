@@ -273,31 +273,31 @@ const MatchPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
+      <div className="h-screen flex flex-col lg:flex-row gap-2 lg:gap-6 p-2 lg:p-6">
         {/* Left Panel - Problem & Scoreboard */}
-        <div className="w-full lg:w-2/5 space-y-4 lg:space-y-6 overflow-y-auto">
+        <div className="w-full lg:w-2/5 space-y-2 lg:space-y-6 overflow-y-auto">
           {/* Timer */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-red-500 to-pink-500 px-6 py-4">
+          <div className="bg-white rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-500 to-pink-500 px-3 lg:px-6 py-3 lg:py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Clock className="h-6 w-6 text-white" />
-                  <span className="font-bold text-white text-lg">Time Remaining</span>
+                <div className="flex items-center space-x-2 lg:space-x-3">
+                  <Clock className="h-4 w-4 lg:h-6 lg:w-6 text-white" />
+                  <span className="font-bold text-white text-sm lg:text-lg">Time Remaining</span>
                 </div>
                 <div className="text-right">
-                  <span className={`text-3xl font-bold ${timeLeft < 60 ? 'text-yellow-300' : 'text-white'}`}>
+                  <span className={`text-xl lg:text-3xl font-bold ${timeLeft < 60 ? 'text-yellow-300' : 'text-white'}`}>
                     {formatTime(timeLeft)}
                   </span>
                   {timeLeft < 60 && (
-                    <p className="text-yellow-200 text-sm">Hurry up!</p>
+                    <p className="text-yellow-200 text-xs lg:text-sm">Hurry up!</p>
                   )}
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="p-2 lg:p-4">
+              <div className="w-full bg-gray-200 rounded-full h-1 lg:h-2">
                 <div 
-                  className={`h-2 rounded-full transition-all duration-1000 ${
+                  className={`h-1 lg:h-2 rounded-full transition-all duration-1000 ${
                     timeLeft < 60 ? 'bg-gradient-to-r from-red-500 to-pink-500' : 
                     timeLeft < 300 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 
                     'bg-gradient-to-r from-green-500 to-emerald-500'
@@ -310,24 +310,24 @@ const MatchPage = () => {
 
           {/* Problem */}
           {loadingProblem ? (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4">
-                <h3 className="text-lg font-bold text-white">Generating Problem...</h3>
+            <div className="bg-white rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-3 lg:px-6 py-3 lg:py-4">
+                <h3 className="text-sm lg:text-lg font-bold text-white">Generating Problem...</h3>
               </div>
-              <div className="p-8">
+              <div className="p-4 lg:p-8">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">Preparing Challenge</h3>
-                  <p className="text-sm text-gray-500">Please wait while we prepare your coding challenge</p>
+                  <div className="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-b-2 border-blue-600 mx-auto mb-2 lg:mb-4"></div>
+                  <h3 className="text-sm lg:text-lg font-semibold text-gray-700 mb-1 lg:mb-2">Preparing Challenge</h3>
+                  <p className="text-xs lg:text-sm text-gray-500">Please wait while we prepare your coding challenge</p>
                 </div>
               </div>
             </div>
           ) : problem ? (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
+            <div className="bg-white rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-3 lg:px-6 py-3 lg:py-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-white">{problem.title}</h2>
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                  <h2 className="text-sm lg:text-xl font-bold text-white truncate">{problem.title}</h2>
+                  <span className={`px-2 lg:px-3 py-1 rounded-full text-xs lg:text-sm font-semibold ${
                     problem.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
                     problem.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-red-100 text-red-800'
@@ -336,24 +336,24 @@ const MatchPage = () => {
                   </span>
                 </div>
               </div>
-              <div className="p-6 max-h-96 overflow-y-auto">
-                <div className="prose prose-sm max-w-none mb-6">
-                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{problem.description}</p>
+              <div className="p-3 lg:p-6 max-h-64 lg:max-h-96 overflow-y-auto">
+                <div className="prose prose-sm max-w-none mb-3 lg:mb-6">
+                  <p className="whitespace-pre-wrap text-gray-700 leading-relaxed text-xs lg:text-sm">{problem.description}</p>
                 </div>
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
-                    <p className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                <div className="space-y-2 lg:space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg lg:rounded-xl p-2 lg:p-4 border border-blue-200">
+                    <p className="text-xs lg:text-sm font-semibold text-blue-800 mb-1 lg:mb-2 flex items-center">
+                      <span className="w-1 h-1 lg:w-2 lg:h-2 bg-blue-500 rounded-full mr-1 lg:mr-2"></span>
                       Sample Input
                     </p>
-                    <code className="text-sm bg-white p-3 rounded-lg block font-mono text-gray-800">{problem.sampleInput}</code>
+                    <code className="text-xs lg:text-sm bg-white p-2 lg:p-3 rounded-lg block font-mono text-gray-800">{problem.sampleInput}</code>
                   </div>
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
-                    <p className="text-sm font-semibold text-green-800 mb-2 flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg lg:rounded-xl p-2 lg:p-4 border border-green-200">
+                    <p className="text-xs lg:text-sm font-semibold text-green-800 mb-1 lg:mb-2 flex items-center">
+                      <span className="w-1 h-1 lg:w-2 lg:h-2 bg-green-500 rounded-full mr-1 lg:mr-2"></span>
                       Sample Output
                     </p>
-                    <code className="text-sm bg-white p-3 rounded-lg block font-mono text-gray-800">{problem.sampleOutput}</code>
+                    <code className="text-xs lg:text-sm bg-white p-2 lg:p-3 rounded-lg block font-mono text-gray-800">{problem.sampleOutput}</code>
                   </div>
                 </div>
               </div>
@@ -361,30 +361,30 @@ const MatchPage = () => {
           ) : null}
 
           {/* Scoreboard */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4">
-              <h3 className="font-bold text-white text-lg flex items-center">
-                <Trophy className="h-6 w-6 mr-3" />
+          <div className="bg-white rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-3 lg:px-6 py-3 lg:py-4">
+              <h3 className="font-bold text-white text-sm lg:text-lg flex items-center">
+                <Trophy className="h-4 w-4 lg:h-6 lg:w-6 mr-2 lg:mr-3" />
                 Live Scoreboard
               </h3>
             </div>
-            <div className="p-6 max-h-64 overflow-y-auto">
+            <div className="p-3 lg:p-6 max-h-48 lg:max-h-64 overflow-y-auto">
               {scoreboard.length === 0 ? (
-                <div className="text-center py-8">
-                  <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No submissions yet</p>
+                <div className="text-center py-4 lg:py-8">
+                  <Trophy className="h-8 w-8 lg:h-12 lg:w-12 text-gray-300 mx-auto mb-2 lg:mb-3" />
+                  <p className="text-gray-500 text-xs lg:text-sm">No submissions yet</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 lg:space-y-3">
                   {scoreboard.map((player, idx) => (
-                    <div key={player.userId} className={`flex items-center justify-between p-4 rounded-xl transition-all duration-200 ${
-                      idx === 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200' :
-                      idx === 1 ? 'bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200' :
-                      idx === 2 ? 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200' :
+                    <div key={player.userId} className={`flex items-center justify-between p-2 lg:p-4 rounded-lg lg:rounded-xl transition-all duration-200 ${
+                      idx === 0 ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200' :
+                      idx === 1 ? 'bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200' :
+                      idx === 2 ? 'bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200' :
                       'bg-gray-50 border border-gray-200'
                     }`}>
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      <div className="flex items-center space-x-2 lg:space-x-4">
+                        <div className={`w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center font-bold text-xs lg:text-sm ${
                           idx === 0 ? 'bg-yellow-500 text-white' :
                           idx === 1 ? 'bg-gray-400 text-white' :
                           idx === 2 ? 'bg-orange-500 text-white' :
@@ -393,18 +393,18 @@ const MatchPage = () => {
                           {idx + 1}
                         </div>
                         <div>
-                          <span className="font-semibold text-gray-900">{player.username}</span>
+                          <span className="font-semibold text-gray-900 text-xs lg:text-sm">{player.username}</span>
                           {idx < 3 && (
                             <div className="flex items-center space-x-1">
-                              {idx === 0 && <span className="text-yellow-500">👑</span>}
-                              {idx === 1 && <span className="text-gray-500">🥈</span>}
-                              {idx === 2 && <span className="text-orange-500">🥉</span>}
+                              {idx === 0 && <span className="text-yellow-500 text-xs">👑</span>}
+                              {idx === 1 && <span className="text-gray-500 text-xs">🥈</span>}
+                              {idx === 2 && <span className="text-orange-500 text-xs">🥉</span>}
                             </div>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="font-bold text-lg text-gray-900">{player.score || 0}</span>
+                        <span className="font-bold text-sm lg:text-lg text-gray-900">{player.score || 0}</span>
                         <p className="text-xs text-gray-500">points</p>
                       </div>
                     </div>
@@ -417,9 +417,9 @@ const MatchPage = () => {
 
         {/* Right Panel - Code Editor */}
         <div className="w-full lg:w-3/5 flex flex-col">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex-1 flex flex-col">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-4 lg:px-6 py-3 lg:py-4">
-              <h3 className="font-bold text-white text-base lg:text-lg">Code Editor</h3>
+          <div className="bg-white rounded-xl lg:rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex-1 flex flex-col">
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-3 lg:px-6 py-2 lg:py-4">
+              <h3 className="font-bold text-white text-sm lg:text-lg">Code Editor</h3>
             </div>
             <div className="flex-1 min-h-0">
               <CodeEditor

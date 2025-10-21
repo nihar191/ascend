@@ -39,14 +39,14 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-gray-100 border-b gap-3">
-        <div className="flex items-center space-x-3">
-          <label className="text-sm font-medium text-gray-700 hidden sm:block">Language:</label>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 lg:p-3 bg-gray-100 border-b gap-2 lg:gap-3">
+        <div className="flex items-center space-x-2 lg:space-x-3">
+          <label className="text-xs lg:text-sm font-medium text-gray-700 hidden sm:block">Language:</label>
           <select
             value={language}
             onChange={handleLanguageChange}
             disabled={disabled}
-            className="px-3 py-2 border rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-2 lg:px-3 py-1 lg:py-2 border rounded text-xs lg:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
@@ -58,22 +58,22 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
         <button
           onClick={onSubmit}
           disabled={disabled}
-          className="btn-primary text-sm flex items-center w-full sm:w-auto justify-center"
+          className="btn-primary text-xs lg:text-sm flex items-center w-full sm:w-auto justify-center py-2 lg:py-3 px-3 lg:px-6"
         >
-          <Play className="h-4 w-4 mr-1" />
+          <Play className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
           Submit
         </button>
       </div>
 
       <div className="flex-1 min-h-0">
         {editorError ? (
-          <div className="h-full p-4">
-            <div className="mb-2 text-sm text-red-600">Monaco Editor failed to load. Using fallback editor:</div>
+          <div className="h-full p-2 lg:p-4">
+            <div className="mb-2 text-xs lg:text-sm text-red-600">Monaco Editor failed to load. Using fallback editor:</div>
             <textarea
               value={code}
               onChange={(e) => handleEditorChange(e.target.value)}
               disabled={disabled}
-              className="w-full h-full p-3 border border-gray-300 rounded font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full h-full p-2 lg:p-3 border border-gray-300 rounded font-mono text-xs lg:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Write your solution here..."
             />
           </div>
@@ -86,7 +86,7 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
             theme="vs-dark"
             options={{
               minimap: { enabled: false },
-              fontSize: window.innerWidth < 768 ? 12 : 14,
+              fontSize: window.innerWidth < 768 ? 10 : 14,
               lineNumbers: 'on',
               scrollBeyondLastLine: false,
               automaticLayout: true,
@@ -97,13 +97,13 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
               scrollbar: {
                 vertical: 'auto',
                 horizontal: 'auto',
-                verticalScrollbarSize: 8,
-                horizontalScrollbarSize: 8,
+                verticalScrollbarSize: 6,
+                horizontalScrollbarSize: 6,
               },
             }}
             onMount={handleEditorDidMount}
             onError={handleEditorError}
-            loading={<div className="flex items-center justify-center h-full">Loading editor...</div>}
+            loading={<div className="flex items-center justify-center h-full text-xs lg:text-sm">Loading editor...</div>}
           />
         )}
       </div>

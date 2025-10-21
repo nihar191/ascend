@@ -99,6 +99,80 @@ class RankingService {
   }
 
   /**
+   * Update user statistics after match completion
+   */
+  async updateUserStatsAfterMatch(matchId) {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // Get match participants with their final scores and ranks
+      const participantsQuery = `
+        SELECT 
+          mp.user_id,
+          mp.score,
+          mp.rank,
+          mp.status,
+          m.problem_id,
+          p.points as problem_points
+        FROM match_participants mp
+        JOIN matches m ON mp.match_id = m.id
+        JOIN problems p ON m.problem_id = p.id
+        WHERE mp.match_id = $1
+      `;
+
+      const participants = await client.query(participantsQuery, [matchId]);
+
+      // Update each user's statistics
+      for (const participant of participants.rows) {
+        const { user_id, score, rank, status, problem_points } = participant;
+        
+        // Determine if this counts as a win (top 3 or solved the problem)
+        const isWin = rank <= 3 || status === 'solved';
+        
+        // Update user stats
+        const updateQuery = `
+          UPDATE users 
+          SET 
+            total_matches = total_matches + 1,
+            wins = wins + $1,
+            losses = losses + $2,
+            rating = rating + $3,
+            total_score = total_score + $4,
+            updated_at = NOW()
+          WHERE id = $5
+        `;
+
+        const winIncrement = isWin ? 1 : 0;
+        const lossIncrement = isWin ? 0 : 1;
+        const ratingChange = isWin ? Math.floor(problem_points * 0.1) : -Math.floor(problem_points * 0.05);
+        const scoreToAdd = score || 0;
+
+        await client.query(updateQuery, [
+          winIncrement,
+          lossIncrement,
+          ratingChange,
+          scoreToAdd,
+          user_id
+        ]);
+
+        console.log(`📊 Updated stats for user ${user_id}: ${isWin ? 'WIN' : 'LOSS'}, rating change: ${ratingChange}, score: ${scoreToAdd}`);
+      }
+
+      await client.query('COMMIT');
+      console.log(`✅ Updated user stats for match ${matchId}`);
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('❌ Error updating user stats:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get optimized leaderboard with pagination and caching
    */
   async getOptimizedLeaderboard(seasonId, { page = 1, limit = 50, userId = null }) {

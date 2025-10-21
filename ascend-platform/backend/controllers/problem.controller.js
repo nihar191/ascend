@@ -2,6 +2,7 @@
 import Problem from '../models/Problem.js';
 import Submission from '../models/Submission.js';
 import geminiService from '../services/gemini.service.js';
+import judgeService from '../services/judge.service.js';
 
 /**
  * Generate URL-safe slug from title
@@ -296,35 +297,49 @@ export const submitSolution = async (req, res) => {
       return res.status(404).json({ error: 'Problem not found' });
     }
 
-    // For now, we'll do a simple validation
-    // In production, you'd want to run the code against test cases
-    const isValidSolution = validateSolution(code, problem);
+    // Validate code syntax
+    const validation = judgeService.validateCode(code, language);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
 
-    // Create submission record
-    const submission = {
-      user_id: req.user.id,
-      problem_id: id,
+    // Prepare test cases for Judge0
+    const testCases = [
+      {
+        input: problem.sampleInput || '',
+        output: problem.sampleOutput || ''
+      }
+    ];
+
+    // Execute code using Judge0
+    console.log(`🚀 Executing problem submission for problem ${id}`);
+    const executionResult = await judgeService.executeCode({
       code,
       language,
-      status: isValidSolution ? 'accepted' : 'wrong_answer',
-      score: isValidSolution ? problem.points : 0,
-      submitted_at: new Date(),
-    };
+      problemId: id,
+      testCases
+    });
 
-    // Save to database
+    const isAccepted = executionResult.status === 'accepted';
+    const score = isAccepted ? problem.points : 0;
+
+    // Save submission to database
     await Submission.create({
       userId: req.user.id,
       problemId: id,
       code,
       language,
-      status: isValidSolution ? 'accepted' : 'wrong_answer',
-      score: isValidSolution ? problem.points : 0
+      status: executionResult.status,
+      score: score
     });
 
     res.json({
-      status: submission.status,
-      score: submission.score,
-      message: isValidSolution ? 'Solution accepted!' : 'Solution incorrect. Try again.',
+      status: executionResult.status,
+      score: score,
+      message: isAccepted ? 'Solution accepted!' : 'Solution incorrect. Try again.',
+      testResults: executionResult.testResults,
+      executionTime: executionResult.executionTimeMs,
+      memoryUsed: executionResult.memoryUsedKb
     });
 
   } catch (error) {

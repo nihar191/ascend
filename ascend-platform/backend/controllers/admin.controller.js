@@ -79,7 +79,10 @@ export const getAllUsers = async (req, res) => {
       paramCount++;
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    // Always include is_active = true condition
+    whereConditions.push(`is_active = true`);
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : 'WHERE is_active = true';
 
     const validSortFields = ['username', 'email', 'rating', 'total_matches', 'wins', 'created_at'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'rating';
@@ -95,7 +98,7 @@ export const getAllUsers = async (req, res) => {
         END as win_rate,
         created_at
       FROM users
-      WHERE is_active = true ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}
+      ${whereClause}
       ORDER BY ${sortField} ${sortOrder}
       LIMIT $${paramCount} OFFSET $${paramCount + 1}
     `;
@@ -105,7 +108,7 @@ export const getAllUsers = async (req, res) => {
     const users = await pool.query(query, queryParams);
 
     // Get total count
-    const countQuery = `SELECT COUNT(*) FROM users WHERE is_active = true ${whereClause ? 'AND ' + whereClause.replace('WHERE ', '') : ''}`;
+    const countQuery = `SELECT COUNT(*) FROM users ${whereClause}`;
     const countResult = await pool.query(countQuery, queryParams.slice(0, paramCount - 1));
 
     res.json({
