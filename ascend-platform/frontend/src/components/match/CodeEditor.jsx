@@ -65,7 +65,7 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
         </button>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 min-h-0">
         {editorError ? (
           <div className="h-full p-4">
             <div className="mb-2 text-sm text-red-600">Monaco Editor failed to load. Using fallback editor:</div>

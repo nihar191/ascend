@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import { Users, Trophy, Code2, Shield, Settings, BarChart3 } from 'lucide-react';
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
@@ -37,10 +39,81 @@ const AdminDashboardPage = () => {
         <p className="text-sm text-gray-600">Signed in as {user?.username}</p>
       </div>
 
+      {/* Quick Actions */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link to="/admin/users" className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="flex items-center space-x-3">
+            <Users className="h-8 w-8 text-blue-600" />
+            <div>
+              <h3 className="font-semibold">User Management</h3>
+              <p className="text-sm text-gray-500">Manage users and roles</p>
+            </div>
+          </div>
+        </Link>
+        
+        <Link to="/admin/matches" className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="flex items-center space-x-3">
+            <Trophy className="h-8 w-8 text-yellow-600" />
+            <div>
+              <h3 className="font-semibold">Match Management</h3>
+              <p className="text-sm text-gray-500">Monitor and control matches</p>
+            </div>
+          </div>
+        </Link>
+        
+        <Link to="/admin/problems" className="card hover:shadow-md transition-shadow cursor-pointer">
+          <div className="flex items-center space-x-3">
+            <Code2 className="h-8 w-8 text-green-600" />
+            <div>
+              <h3 className="font-semibold">Problem Management</h3>
+              <p className="text-sm text-gray-500">Create and manage problems</p>
+            </div>
+          </div>
+        </Link>
+        
+        <div className="card">
+          <div className="flex items-center space-x-3">
+            <Settings className="h-8 w-8 text-gray-600" />
+            <div>
+              <h3 className="font-semibold">Settings</h3>
+              <p className="text-sm text-gray-500">Platform configuration</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Statistics */}
       <div className="grid md:grid-cols-3 gap-4">
-        <div className="card"><h3 className="font-semibold">Users</h3><p className="text-2xl font-bold">{stats?.total_users ?? 0}</p><p className="text-xs text-gray-500">+{stats?.new_users_week ?? 0} last 7d</p></div>
-        <div className="card"><h3 className="font-semibold">Problems</h3><p className="text-2xl font-bold">{stats?.total_problems ?? 0}</p><p className="text-xs text-gray-500">AI: {stats?.ai_problems ?? 0}</p></div>
-        <div className="card"><h3 className="font-semibold">Matches</h3><p className="text-2xl font-bold">{stats?.total_matches ?? 0}</p><p className="text-xs text-gray-500">Active: {stats?.active_matches ?? 0}</p></div>
+        <div className="card">
+          <div className="flex items-center space-x-3">
+            <Users className="h-6 w-6 text-blue-600" />
+            <div>
+              <h3 className="font-semibold">Users</h3>
+              <p className="text-2xl font-bold">{stats?.total_users ?? 0}</p>
+              <p className="text-xs text-gray-500">+{stats?.new_users_week ?? 0} last 7d</p>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="flex items-center space-x-3">
+            <Code2 className="h-6 w-6 text-green-600" />
+            <div>
+              <h3 className="font-semibold">Problems</h3>
+              <p className="text-2xl font-bold">{stats?.total_problems ?? 0}</p>
+              <p className="text-xs text-gray-500">AI: {stats?.ai_problems ?? 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="flex items-center space-x-3">
+            <Trophy className="h-6 w-6 text-yellow-600" />
+            <div>
+              <h3 className="font-semibold">Matches</h3>
+              <p className="text-2xl font-bold">{stats?.total_matches ?? 0}</p>
+              <p className="text-xs text-gray-500">Active: {stats?.active_matches ?? 0}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">

@@ -273,9 +273,9 @@ const MatchPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
+      <div className="h-screen flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6">
         {/* Left Panel - Problem & Scoreboard */}
-        <div className="w-full lg:w-1/3 space-y-4 lg:space-y-6 overflow-y-auto">
+        <div className="w-full lg:w-2/5 space-y-4 lg:space-y-6 overflow-y-auto">
           {/* Timer */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="bg-gradient-to-r from-red-500 to-pink-500 px-6 py-4">
@@ -336,7 +336,7 @@ const MatchPage = () => {
                   </span>
                 </div>
               </div>
-              <div className="p-6">
+              <div className="p-6 max-h-96 overflow-y-auto">
                 <div className="prose prose-sm max-w-none mb-6">
                   <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{problem.description}</p>
                 </div>
@@ -368,7 +368,7 @@ const MatchPage = () => {
                 Live Scoreboard
               </h3>
             </div>
-            <div className="p-6">
+            <div className="p-6 max-h-64 overflow-y-auto">
               {scoreboard.length === 0 ? (
                 <div className="text-center py-8">
                   <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-3" />
@@ -416,7 +416,7 @@ const MatchPage = () => {
         </div>
 
         {/* Right Panel - Code Editor */}
-        <div className="w-full lg:w-2/3 flex flex-col">
+        <div className="w-full lg:w-3/5 flex flex-col">
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden flex-1 flex flex-col">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-500 px-4 lg:px-6 py-3 lg:py-4">
               <h3 className="font-bold text-white text-base lg:text-lg">Code Editor</h3>
