@@ -1,6 +1,7 @@
 // backend/controllers/problem.controller.js
 import Problem from '../models/Problem.js';
 import Submission from '../models/Submission.js';
+import User from '../models/User.js';
 import geminiService from '../services/gemini.service.js';
 import judgeService from '../services/judge.service.js';
 
@@ -332,6 +333,24 @@ export const submitSolution = async (req, res) => {
       status: executionResult.status,
       score: score
     });
+
+    // Update user stats and rating for standalone problem submissions
+    try {
+      // Count this attempt towards user stats
+      await User.updateStats(req.user.id, { won: isAccepted });
+
+      // Apply a small rating change on accepted submissions based on problem points
+      if (isAccepted) {
+        const ratingGain = Math.max(1, Math.floor((problem.points || 0) * 0.1));
+        const current = await User.findById(req.user.id);
+        if (current) {
+          await User.updateRating(req.user.id, (current.rating || 1000) + ratingGain);
+        }
+      }
+    } catch (statsError) {
+      // Log and continue; do not fail the submission response due to stats update
+      console.error('Failed to update user stats/rating after problem submission:', statsError);
+    }
 
     res.json({
       status: executionResult.status,

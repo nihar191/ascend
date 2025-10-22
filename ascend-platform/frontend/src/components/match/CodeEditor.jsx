@@ -39,14 +39,14 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 lg:p-3 bg-gray-100 border-b gap-2 lg:gap-3">
-        <div className="flex items-center space-x-2 lg:space-x-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 lg:p-3 bg-gray-100 border-b gap-2 lg:gap-3 sticky top-0 z-10">
+        <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
           <label className="text-xs lg:text-sm font-medium text-gray-700 hidden sm:block">Language:</label>
           <select
             value={language}
             onChange={handleLanguageChange}
             disabled={disabled}
-            className="px-2 lg:px-3 py-1 lg:py-2 border rounded text-xs lg:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="px-2 lg:px-3 py-1 lg:py-2 border rounded text-xs lg:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1 sm:flex-none"
           >
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
@@ -100,6 +100,7 @@ const CodeEditor = ({ code, onChange, onSubmit, language = 'javascript', onLangu
                 verticalScrollbarSize: 6,
                 horizontalScrollbarSize: 6,
               },
+              padding: { top: 8, bottom: 8 },
             }}
             onMount={handleEditorDidMount}
             onError={handleEditorError}

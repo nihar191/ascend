@@ -5,10 +5,12 @@ import { problemsAPI } from '../services/api';
 import { ArrowLeft, Code2, Clock, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CodeEditor from '../components/match/CodeEditor';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProblemDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState('// Write your solution here\n\n');
@@ -54,7 +56,11 @@ const ProblemDetailPage = () => {
       toast.dismiss();
       
       if (response.data.status === 'accepted') {
-        toast.success('Solution accepted! 🎉', { duration: 4000 });
+        toast.success('Solution accepted! 🎉 Redirecting...', { duration: 2500 });
+        // Refresh profile to reflect updated stats/rating
+        await refreshProfile();
+        // Redirect after a short delay
+        setTimeout(() => navigate('/dashboard'), 2500);
       } else {
         const errorMessage = response.data.message || 'Wrong answer';
         toast.error(`Solution failed: ${errorMessage}`, { duration: 4000 });
@@ -129,11 +135,15 @@ const ProblemDetailPage = () => {
                 </div>
                 <div className="p-6 space-y-6">
                   {/* Problem Stats */}
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="text-center p-3 bg-gray-50 rounded-lg">
                       <Clock className="h-5 w-5 mx-auto text-gray-600 mb-1" />
                       <p className="text-sm text-gray-600">Time Limit</p>
-                      <p className="font-semibold">{problem.time_limit_ms}ms</p>
+                      <p className="font-semibold">
+                        {problem.time_limit_ms >= 1000
+                          ? `${Math.floor(problem.time_limit_ms / 1000)}s`
+                          : `${problem.time_limit_ms}ms`}
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-gray-50 rounded-lg">
                       <Zap className="h-5 w-5 mx-auto text-gray-600 mb-1" />
